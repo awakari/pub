@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package awakari.source.sites;
+
+option go_package = "api/grpc/source/sites";
+
+import "google/protobuf/timestamp.proto";
+
+service Service {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (ListResponse);
+}
+
+message CreateRequest {
+  Site site = 1;
+}
+
+message CreateResponse {
+}
+
+message ReadRequest {
+  string addr = 1;
+}
+
+message ReadResponse {
+  Site site = 1;
+}
+
+message DeleteRequest {
+  string addr = 1;
+  string groupId = 2;
+  string userId = 3;
+}
+
+message DeleteResponse {
+}
+
+message ListRequest {
+  Filter filter = 1;
+  uint32 limit = 2;
+  string cursor = 3;
+  Order order = 4;
+}
+
+enum Order {
+  ASC = 0;
+  DESC = 1;
+}
+
+message ListResponse {
+  repeated string page = 1;
+}
+
+message Site {
+  string addr = 1;
+  string groupId = 2;
+  string userId = 3;
+  google.protobuf.Timestamp lastUpdate = 4;
+}
+
+message Filter {
+  string groupId = 1;
+  string userId = 2;
+  string pattern = 3;
+}

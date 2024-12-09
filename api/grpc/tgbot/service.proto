@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package awakari.tgbot;
+
+option go_package = "api/grpc/tgbot";
+
+import "google/protobuf/timestamp.proto";
+
+service Service {
+  rpc ListChannels(ListChannelsRequest) returns (ListChannelsResponse);
+}
+
+message ListChannelsRequest {
+  uint32 limit = 1;
+  string cursor = 2;
+  Filter filter = 3;
+  Order order = 4;
+}
+
+enum Order {
+  ASC = 0;
+  DESC = 1;
+}
+
+message ListChannelsResponse {
+  repeated Channel page = 1;
+}
+
+message Channel {
+  string link = 1;
+  google.protobuf.Timestamp lastUpdate = 2;
+}
+
+message Filter {
+  string pattern = 1;
+}

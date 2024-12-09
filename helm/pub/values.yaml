@@ -1,0 +1,128 @@
+# Default values for pub.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/awakari/pub
+  pullPolicy: Always
+  tag: "latest"
+imagePullSecrets:
+  - name: github-registry
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port:
+    http: 8080
+
+ingress:
+  enabled: true
+  # limits are per source IP address
+  limit:
+    connections: 1000
+    rate:
+      second: 100
+      minute: 1000
+  hosts:
+    - host: pub.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: secret-pub-tls-server
+      hosts:
+        - pub.local
+
+resources:
+  requests:
+    cpu: 1m
+    memory: 16Mi
+  limits:
+    cpu: 1000m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationValue: 100m
+  targetMemoryUtilizationValue: 128Mi
+
+priority:
+  class: "awk-critical"
+  value: 1000
+  preemptionPolicy: "PreemptLowerPriority"
+
+nodeSelector: {}
+
+tolerations: []
+
+api:
+  source:
+    activitypub:
+      uri: "int-activitypub:50051"
+    feeds:
+      uri: "source-feeds:50051"
+    sites:
+      uri: "source-sites:50051"
+    telegram:
+      uri: "source-telegram:50051"
+      fmtUriReplica: "source-telegram-%d:50051"
+  writer:
+    internal:
+      name: "awkinternal"
+      secret: "resolver-internal-attr-val"
+  events:
+    uri: "events:50051"
+    conn:
+      count:
+        init: 1
+        max: 10
+      idleTimeout: "15m"
+    topic: "published"
+    limit: 100000
+  tgbot:
+    uri: "bot-telegram:50051"
+  auth:
+    uri: "auth:50051"
+  usage:
+    uri: "usage:50051"
+    conn:
+      count:
+        init: 1
+        max: 10
+      idleTimeout: "15m"
+cert:
+  acme:
+    email: "awakari@awakari.com"
+    server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+  issuer:
+    name: letsencrypt-staging
+log:
+  # https://pkg.go.dev/golang.org/x/exp/slog#Level
+  level: -4

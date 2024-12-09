@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package awakari.auth;
+
+option go_package = "api/grpc/auth";
+
+service Service {
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+}
+
+message AuthenticateRequest {
+  string userId = 1;
+  string token = 2;
+}
+
+message AuthenticateResponse {
+}

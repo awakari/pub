@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package awakari.int.activitypub;
+
+option go_package = "api/grpc/source/activitypub";
+
+import "google/protobuf/timestamp.proto";
+
+service Service {
+
+  // Create means Follow the specified actor
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  // Read the actor details
+  rpc Read(ReadRequest) returns (ReadResponse);
+
+  // Delete means Unfollow in terms of ActivityPub
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  // List actors
+  rpc ListUrls(ListUrlsRequest) returns (ListUrlsResponse);
+}
+
+message CreateRequest {
+  // actor address, e.g. "https://mastodon.social/@Mastodon"
+  string addr = 1;
+  string groupId = 2;
+  string userId = 3;
+}
+
+message CreateResponse {
+  // The resolved actor URI, e.g. "https://mastodon.social/users/Mastodon"
+  string url = 1;
+}
+
+message ReadRequest {
+  string url = 1;
+}
+
+message ReadResponse {
+  Source src = 1;
+}
+
+message DeleteRequest {
+  string url = 1;
+  string groupId = 2;
+  string userId = 3;
+}
+
+message DeleteResponse {
+}
+
+message ListUrlsRequest {
+  Filter filter = 1;
+  uint32 limit = 2;
+  string cursor = 3;
+  Order order = 4;
+}
+
+enum Order {
+  ASC = 0;
+  DESC = 1;
+}
+
+message ListUrlsResponse {
+  repeated string page = 1;
+}
+
+message Source {
+  string actorId = 1;
+  string groupId = 2;
+  string userId = 3;
+  string type = 4;
+  string name = 5;
+  string summary = 6;
+  bool accepted = 7;
+  google.protobuf.Timestamp last = 8;
+  google.protobuf.Timestamp created = 9;
+  string subId = 10;
+  string term = 11;
+}
+
+message Filter {
+  string groupId = 1;
+  string userId = 2;
+  string pattern = 3;
+  string subId = 4;
+}

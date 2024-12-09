@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package awakari.usage.subject;
+
+option go_package = "github.com/awakari/pub/api/grpc/subject";
+
+enum Subject {
+  Undefined = 0;
+  Interests = 1;
+  PublishEvents = 2;
+}

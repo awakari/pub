@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package awakari.events;
+
+option go_package = "api/grpc/events";
+
+import "api/grpc/cloudevents/cloudevent.proto";
+
+service Service {
+
+  rpc SetStream(SetStreamRequest) returns (SetStreamResponse);
+
+  // Publish events to the specified topic.
+  rpc Publish(stream PublishRequest) returns (stream PublishResponse);
+}
+
+message SetStreamRequest {
+  string topic = 1;
+  uint32 limit = 2;
+}
+
+message SetStreamResponse {
+}
+
+message PublishRequest {
+  string topic = 1;
+  repeated pb.CloudEvent evts = 2;
+}
+
+message PublishResponse {
+  uint32 ackCount = 1;
+}

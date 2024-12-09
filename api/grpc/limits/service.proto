@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package awakari.usage.limits;
+
+option go_package = "api/grpc/limits";
+
+import "api/grpc/subject/subject.proto";
+import "google/protobuf/timestamp.proto";
+
+service Service {
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Set(SetRequest) returns (SetResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+}
+
+// NOTE: "X-Awakari-Group-Id" and "X-Awakari-UserId" request headers should be set
+message GetRequest {
+  subject.Subject subj = 1;
+  bool raw = 2;
+}
+
+message GetResponse {
+  string userId = 1;
+  int64 count = 2;
+  google.protobuf.Timestamp expires = 3;
+}
+
+message SetRequest {
+  string groupId = 1;
+  string userId = 2;
+  subject.Subject subj = 3;
+  int64 count = 4;
+  google.protobuf.Timestamp expires = 5;
+}
+
+message SetResponse {
+}
+
+message DeleteRequest {
+  string groupId = 1;
+  string userId = 2;
+  repeated subject.Subject subjs = 3;
+}
+
+message DeleteResponse {
+}

@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pub.fullname" . }}
+  labels:
+    {{- include "pub.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "pub.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "pub.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "pub.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      priorityClassName: "{{ .Values.priority.class }}"
+      containers:
+        - name: {{ .Chart.Name }}
+          env:
+            - name: API_HTTP_PORT
+              value: "{{ .Values.service.port.http }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.log.level }}"
+            - name: API_WRITER_INTERNAL_NAME
+              value: "{{ .Values.api.writer.internal.name }}"
+            - name: API_WRITER_INTERNAL_VALUE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.api.writer.internal.secret }}"
+                  key: "{{ .Values.api.writer.internal.name }}"
+            - name: API_TGBOT_URI
+              value: "{{ .Values.api.tgbot.uri }}"
+            - name: API_SOURCE_ACTIVITYPUB_URI
+              value: "{{ .Values.api.source.activitypub.uri }}"
+            - name: API_SOURCE_FEEDS_URI
+              value: "{{ .Values.api.source.feeds.uri }}"
+            - name: API_SOURCE_SITES_URI
+              value: "{{ .Values.api.source.sites.uri }}"
+            - name: API_SOURCE_TELEGRAM_URI
+              value: "{{ .Values.api.source.telegram.uri }}"
+            - name: API_SOURCE_TELEGRAM_FMT_URI_REPLICA
+              value: "{{ .Values.api.source.telegram.fmtUriReplica }}"
+            - name: API_EVENTS_URI
+              value: "{{ .Values.api.events.uri }}"
+            - name: API_EVENTS_TOPIC
+              value: "{{ .Values.api.events.topic }}"
+            - name: API_EVENTS_LIMIT
+              value: "{{ .Values.api.events.limit }}"
+            - name: API_EVENTS_CONN_COUNT_INIT
+              value: "{{ .Values.api.events.conn.count.init }}"
+            - name: API_EVENTS_CONN_COUNT_MAX
+              value: "{{ .Values.api.events.conn.count.max }}"
+            - name: API_EVENTS_CONN_IDLE_TIMEOUT
+              value: "{{ .Values.api.events.conn.idleTimeout }}"
+            - name: API_AUTH_URI
+              value: "{{ .Values.api.auth.uri }}"
+            - name: API_USAGE_URI
+              value: "{{ .Values.api.usage.uri }}"
+            - name: API_USAGE_CONN_COUNT_INIT
+              value: "{{ .Values.api.usage.conn.count.init }}"
+            - name: API_USAGE_CONN_COUNT_MAX
+              value: "{{ .Values.api.usage.conn.count.max }}"
+            - name: API_USAGE_CONN_IDLE_TIMEOUT
+              value: "{{ .Values.api.usage.conn.idleTimeout }}"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port.http }}
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: "{{ .Values.service.port.http }}"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: "{{ .Values.service.port.http }}"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - {{ include "pub.name" . }}
+              topologyKey: "kubernetes.io/hostname"
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

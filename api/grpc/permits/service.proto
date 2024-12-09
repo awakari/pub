@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package awakari.usage.permits;
+
+option go_package = "api/grpc/permits";
+
+import "google/protobuf/timestamp.proto";
+import "api/grpc/subject/subject.proto";
+
+service Service {
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Allocate(AllocateRequest) returns (AllocateResponse);
+  rpc Release(ReleaseRequest) returns (ReleaseResponse);
+}
+
+message GetRequest {
+  subject.Subject subj = 1;
+}
+
+message GetResponse {
+  int64 count = 1;
+  int64 countTotal = 2;
+  google.protobuf.Timestamp since = 3;
+}
+
+message AllocateRequest {
+  string groupId = 1;
+  string userId = 2;
+  subject.Subject subj = 3;
+  uint32 count = 4;
+}
+
+message AllocateResponse {
+  string userId = 1;
+  uint32 count = 2;
+  bool justExhausted = 3;
+}
+
+message ReleaseRequest {
+  string groupId = 1;
+  string userId = 2;
+  subject.Subject subj = 3;
+  uint32 count = 4;
+}
+
+message ReleaseResponse {
+}

@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package awakari.source.feeds;
+
+option go_package = "api/grpc/source/feeds";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+service Service {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc ListUrls(ListUrlsRequest) returns (ListUrlsResponse);
+
+}
+
+message CreateRequest {
+  Feed feed = 1;
+}
+
+message CreateResponse {
+  string msg = 1;
+}
+
+message ReadRequest {
+  string url = 1;
+}
+
+message ReadResponse {
+  Feed feed = 1;
+}
+
+message DeleteRequest {
+  string url = 1;
+  string groupId = 2;
+  string userId = 3;
+}
+
+message DeleteResponse {
+}
+
+message ListUrlsRequest {
+  Filter filter = 1;
+  uint32 limit = 2;
+  string cursor = 3;
+  Order order = 4;
+}
+
+enum Order {
+  ASC = 0;
+  DESC = 1;
+}
+
+message ListUrlsResponse {
+  repeated string page = 1;
+}
+
+message Feed {
+  string url = 1;
+  string groupId = 2;
+  string userId = 3;
+  google.protobuf.Duration updatePeriod = 4;
+  google.protobuf.Timestamp nextUpdate = 5;
+  google.protobuf.Timestamp itemLast = 6;
+  bool push = 7;
+  map<uint32, int64> counts = 8;
+  google.protobuf.Timestamp created = 9;
+  string subId = 10;
+  string terms = 11;
+  string title = 12;
+}
+
+message Filter {
+  string groupId = 1;
+  string userId = 2;
+  string pattern = 3;
+  string subId = 4;
+}
