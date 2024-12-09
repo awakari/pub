@@ -1,4 +1,5 @@
 ingress:
+  corsAllowOrigin: "https://awakari.com"
   hosts:
     - host: pub.awakari.com
       paths:

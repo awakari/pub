@@ -3,7 +3,7 @@ package pub
 import (
 	"github.com/awakari/pub/api/grpc/events"
 	"github.com/awakari/pub/api/grpc/publisher"
-	grpc2 "github.com/awakari/pub/api/http/grpc"
+	"github.com/awakari/pub/api/http/grpc"
 	"github.com/awakari/pub/config"
 	"github.com/awakari/pub/model"
 	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
@@ -68,7 +68,7 @@ func (h handler) WriteInternal(ctx *gin.Context) {
 }
 
 func (h handler) write(ctx *gin.Context, evt *pb.CloudEvent, internal bool) {
-	grpcCtx, groupId, userId := grpc2.AuthRequestContext(ctx)
+	grpcCtx, groupId, userId := grpc.AuthRequestContext(ctx)
 	conn, err := h.connPoolEvts.Get(ctx)
 	var streamClient events.Service_PublishClient
 	if err == nil {
@@ -112,5 +112,5 @@ func (h handler) write(ctx *gin.Context, evt *pb.CloudEvent, internal bool) {
 	if err == nil && resp.AckCount == 0 {
 		err = status.Error(codes.Unavailable, "was unable to submit, retry later")
 	}
-	grpc2.RespondJson(ctx, resp, err)
+	grpc.RespondJson(ctx, resp, err)
 }

@@ -26,6 +26,10 @@ metadata:
     nginx.ingress.kubernetes.io/limit-rps: "{{ .Values.ingress.limit.rate.second }}"
     nginx.ingress.kubernetes.io/limit-rpm: "{{ .Values.ingress.limit.rate.second }}"
     nginx.ingress.kubernetes.io/limit-connections: "{{ .Values.ingress.limit.connections }}"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "{{ .Values.ingress.corsAllowOrigin }}"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "HEAD, OPTIONS, GET, POST, DELETE"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,X-Awakari-Group-Id,X-Awakari-User-Id,X-Awakari-Src-Addr"
 spec:
   {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.ingress.className }}
