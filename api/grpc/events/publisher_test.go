@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
+	"github.com/awakari/pub/api/grpc/ce"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -17,13 +17,13 @@ func TestMessagesWriter_Close(t *testing.T) {
 func TestMessagesWriter_Write(t *testing.T) {
 	cases := map[string]struct {
 		queue    string
-		msgs     []*pb.CloudEvent
+		msgs     []*ce.CloudEvent
 		ackCount uint32
 		err      error
 	}{
 		"1 => ack 1": {
 			queue: "queue0",
-			msgs: []*pb.CloudEvent{
+			msgs: []*ce.CloudEvent{
 				{
 					Id: "msg0",
 				},
@@ -32,7 +32,7 @@ func TestMessagesWriter_Write(t *testing.T) {
 		},
 		"3 => ack 2": {
 			queue: "queue0",
-			msgs: []*pb.CloudEvent{
+			msgs: []*ce.CloudEvent{
 				{
 					Id: "msg0",
 				},
@@ -47,7 +47,7 @@ func TestMessagesWriter_Write(t *testing.T) {
 		},
 		"send eof": {
 			queue: "send_eof",
-			msgs: []*pb.CloudEvent{
+			msgs: []*ce.CloudEvent{
 				{
 					Id: "msg0",
 				},
@@ -56,7 +56,7 @@ func TestMessagesWriter_Write(t *testing.T) {
 		},
 		"recv fail": {
 			queue: "recv_fail",
-			msgs: []*pb.CloudEvent{
+			msgs: []*ce.CloudEvent{
 				{
 					Id: "msg0",
 				},
@@ -65,7 +65,7 @@ func TestMessagesWriter_Write(t *testing.T) {
 		},
 		"recv eof": {
 			queue: "recv_eof",
-			msgs: []*pb.CloudEvent{
+			msgs: []*ce.CloudEvent{
 				{
 					Id: "msg0",
 				},

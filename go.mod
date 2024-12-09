@@ -4,7 +4,6 @@ go 1.23
 
 require (
 	github.com/bytedance/sonic v1.12.5
-	github.com/cloudevents/sdk-go/binding/format/protobuf/v2 v2.15.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/processout/grpc-go-pool v1.2.1
@@ -44,7 +43,7 @@ require (
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241206012308-a4fef0638583 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241209162323-e6fa225c2576 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

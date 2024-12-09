@@ -186,6 +186,7 @@ func main() {
 	r.
 		Group("/v1", handlerAuth.Authorize).
 		POST("", handlerPub.Write).
+		POST("/batch", handlerPub.WriteBatch).
 		POST("/internal", handlerPub.WriteInternal)
 	err = r.Run(fmt.Sprintf(":%d", cfg.Api.Http.Port))
 	if err != nil {

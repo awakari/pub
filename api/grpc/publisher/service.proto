@@ -4,14 +4,14 @@ package awakari.publisher;
 
 option go_package = "api/grpc/publisher";
 
-import "api/grpc/cloudevents/cloudevent.proto";
+import "api/grpc/ce/cloudevent.proto";
 
 service Service {
   rpc SubmitMessages(stream SubmitMessagesRequest) returns (stream SubmitMessagesResponse);
 }
 
 message SubmitMessagesRequest {
-  repeated pb.CloudEvent msgs = 1;
+  repeated ce.CloudEvent msgs = 1;
 }
 
 message SubmitMessagesResponse {

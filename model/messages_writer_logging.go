@@ -3,7 +3,7 @@ package model
 import (
 	"context"
 	"fmt"
-	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
+	"github.com/awakari/pub/api/grpc/ce"
 	"log/slog"
 )
 
@@ -28,7 +28,7 @@ func (lw messagesWriterLogging) Close() (err error) {
 	return
 }
 
-func (lw messagesWriterLogging) Write(ctx context.Context, msgs []*pb.CloudEvent) (ackCount uint32, err error) {
+func (lw messagesWriterLogging) Write(ctx context.Context, msgs []*ce.CloudEvent) (ackCount uint32, err error) {
 	ackCount, err = lw.w.Write(ctx, msgs)
 	ll := lw.logLevel(err)
 	if err != nil {
