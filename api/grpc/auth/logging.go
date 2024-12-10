@@ -20,6 +20,6 @@ func NewLogging(svc Service, log *slog.Logger) Service {
 
 func (l logging) Authenticate(ctx context.Context, userId, token string) (err error) {
 	err = l.svc.Authenticate(ctx, userId, token)
-	l.log.Debug(fmt.Sprintf("Authenticate(%s, %s): %s", userId, token, err))
+	l.log.Debug(fmt.Sprintf("Authenticate(%s, _): %s", userId, err))
 	return
 }
