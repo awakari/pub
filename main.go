@@ -17,6 +17,8 @@ import (
 	httpPub "github.com/awakari/pub/api/http/pub"
 	httpSrc "github.com/awakari/pub/api/http/pub/src"
 	"github.com/awakari/pub/config"
+	"github.com/awakari/pub/model"
+	"github.com/awakari/pub/storage"
 	"github.com/gin-gonic/gin"
 	grpcpool "github.com/processout/grpc-go-pool"
 	"google.golang.org/grpc"
@@ -153,10 +155,36 @@ func main() {
 	svcPermits := grpcPermits.NewService(clientPermits)
 	svcPermits = grpcPermits.NewServiceLogging(svcPermits, log)
 
+	// init blacklist
+	var stor storage.Blacklist
+	stor, err = storage.NewBlacklist(context.TODO(), cfg.Db)
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize the blacklist storage: %s", err))
+	}
+	var cursor string
+	var page []model.BlacklistEntry
+	blacklist := model.NewPrefixes[model.BlacklistValue]()
+	for {
+		page, err = stor.GetPage(context.TODO(), 100, cursor)
+		if err != nil {
+			panic(err)
+		}
+		if len(page) == 0 {
+			break
+		}
+		cursor = page[len(page)-1].Prefix
+		for _, e := range page {
+			_ = blacklist.Put(context.TODO(), e.Prefix, e.Value)
+		}
+	}
+	stor.Close()
+	log.Info("loaded the blacklist")
+
 	handlerPub := httpPub.NewHandler(
 		publisher.NewService(clientEvts, svcPermits, cfg.Api.Events),
 		cfg.Api.Writer.Internal,
 		connPoolEvts,
+		blacklist,
 	)
 	handlerSrc := httpSrc.NewHandler(svcSrcFeeds, svcSrcSites, svcSrcTg, svcSrcAp, svcTgBot, svcLimits, svcPermits)
 

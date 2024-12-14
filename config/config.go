@@ -22,6 +22,7 @@ type Config struct {
 		Auth  AuthConfig
 		Usage UsageConfig
 	}
+	Db  DbConfig
 	Log struct {
 		Level int `envconfig:"LOG_LEVEL" default:"-4" required:"true"`
 	}
@@ -83,6 +84,22 @@ type UsageConfig struct {
 			Max  uint32 `envconfig:"API_USAGE_CONN_COUNT_MAX" default:"10" required:"true"`
 		}
 		IdleTimeout time.Duration `envconfig:"API_USAGE_CONN_IDLE_TIMEOUT" default:"15m" required:"true"`
+	}
+}
+
+type DbConfig struct {
+	Uri      string `envconfig:"DB_URI" default:"mongodb://localhost:27017/?retryWrites=true&w=majority" required:"true"`
+	Name     string `envconfig:"DB_NAME" default:"pub" required:"true"`
+	UserName string `envconfig:"DB_USERNAME" default:""`
+	Password string `envconfig:"DB_PASSWORD" default:""`
+	Table    struct {
+		Blacklist struct {
+			Name string `envconfig:"DB_TABLE_NAME_BLACKLIST" default:"blacklist" required:"true"`
+		}
+	}
+	Tls struct {
+		Enabled  bool `envconfig:"DB_TLS_ENABLED" default:"false" required:"true"`
+		Insecure bool `envconfig:"DB_TLS_INSECURE" default:"false" required:"true"`
 	}
 }
 

@@ -1,6 +1,7 @@
 package pub
 
 import (
+	"fmt"
 	apiGrpcCe "github.com/awakari/pub/api/grpc/ce"
 	"github.com/awakari/pub/api/grpc/events"
 	"github.com/awakari/pub/api/grpc/publisher"
@@ -10,11 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 	grpcpool "github.com/processout/grpc-go-pool"
 	"go.uber.org/ratelimit"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"io"
+	"net/http"
 	"time"
 )
 
@@ -29,14 +29,21 @@ type handler struct {
 	writerInternalCfg       config.WriterInternalConfig
 	connPoolEvts            *grpcpool.Pool
 	writerInternalRateLimit ratelimit.Limiter
+	blacklist               model.Prefixes[model.BlacklistValue]
 }
 
-func NewHandler(writer publisher.Service, writerInternalCfg config.WriterInternalConfig, connPoolEvts *grpcpool.Pool) Handler {
+func NewHandler(
+	writer publisher.Service,
+	writerInternalCfg config.WriterInternalConfig,
+	connPoolEvts *grpcpool.Pool,
+	blacklist model.Prefixes[model.BlacklistValue],
+) Handler {
 	return handler{
 		writer:                  writer,
 		writerInternalCfg:       writerInternalCfg,
 		connPoolEvts:            connPoolEvts,
 		writerInternalRateLimit: ratelimit.New(writerInternalCfg.RateLimitPerMinute, ratelimit.Per(time.Minute)),
+		blacklist:               blacklist,
 	}
 }
 
@@ -80,8 +87,51 @@ func (h handler) WriteInternal(ctx *gin.Context) {
 }
 
 func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal bool) {
-	grpcCtx, groupId, userId := grpc.AuthRequestContext(ctx)
+
+	if !internal {
+
+		for i, evt := range evts {
+
+			var prefix string
+			prefix, _, _ = h.blacklist.FindOnePrefix(ctx, "source:"+evt.Source)
+			if prefix == "" {
+				prefix, _, _ = h.blacklist.FindOnePrefix(ctx, "type:"+evt.Source)
+			}
+			if prefix == "" {
+				for k, v := range evt.Attributes {
+					var vs string
+					switch vt := v.Attr.(type) {
+					case *apiGrpcCe.CloudEventAttributeValue_CeString:
+						vs = vt.CeString
+					case *apiGrpcCe.CloudEventAttributeValue_CeUri:
+						vs = vt.CeUri
+					case *apiGrpcCe.CloudEventAttributeValue_CeUriRef:
+						vs = vt.CeUriRef
+					}
+					if vs != "" {
+						prefix, _, _ = h.blacklist.FindOnePrefix(ctx, k+":"+vs)
+						if prefix != "" {
+							break
+						}
+					}
+				}
+			}
+
+			if prefix != "" {
+				switch i {
+				case 0:
+					fmt.Printf("event %s was rejected by blacklist prefix: %s\n", evt.Id, prefix)
+					ctx.String(http.StatusForbidden, fmt.Sprintf("forbidden by prefix: %s", prefix))
+					return
+				default:
+					evts = evts[:i] // truncate the batch
+				}
+			}
+		}
+	}
+
 	conn, err := h.connPoolEvts.Get(ctx)
+
 	var streamClient events.Service_PublishClient
 	if err == nil {
 		c := conn.ClientConn
@@ -89,9 +139,11 @@ func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal 
 		client := events.NewServiceClient(c)
 		streamClient, err = client.Publish(ctx)
 	}
+
 	var resp *publisher.SubmitMessagesResponse
 	if err == nil {
 		defer streamClient.CloseSend()
+		grpcCtx, groupId, userId := grpc.AuthRequestContext(ctx)
 		for _, evt := range evts {
 			if evt.Attributes == nil {
 				evt.Attributes = make(map[string]*apiGrpcCe.CloudEventAttributeValue)
@@ -121,8 +173,11 @@ func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal 
 			resp, err = h.writer.SubmitPermittedEvents(grpcCtx, streamClient, &req, groupId, userId)
 		}
 	}
+
 	if err == nil && resp.AckCount == 0 {
-		err = status.Error(codes.Unavailable, "was unable to submit, retry later")
+		ctx.String(http.StatusServiceUnavailable, "was unable to submit, retry later")
+		return
 	}
+
 	grpc.RespondJson(ctx, resp, err)
 }

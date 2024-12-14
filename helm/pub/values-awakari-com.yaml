@@ -16,3 +16,9 @@ cert:
     server: "https://acme-v02.api.letsencrypt.org/directory"
   issuer:
     name: letsencrypt
+
+
+db:
+  tls:
+    enabled: true
+    insecure: true

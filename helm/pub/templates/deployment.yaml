@@ -76,6 +76,29 @@ spec:
               value: "{{ .Values.api.usage.conn.count.max }}"
             - name: API_USAGE_CONN_IDLE_TIMEOUT
               value: "{{ .Values.api.usage.conn.idleTimeout }}"
+            - name: DB_NAME
+              value: {{ .Values.db.name }}
+            - name: DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secret.name }}"
+                  key: "{{ .Values.db.secret.keys.url }}"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secret.name }}"
+                  key: "{{ .Values.db.secret.keys.username }}"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.secret.name }}"
+                  key: "{{ .Values.db.secret.keys.password }}"
+            - name: DB_TABLE_NAME_BLACKLIST
+              value: {{ .Values.db.table.name.blacklist }}
+            - name: DB_TLS_ENABLED
+              value: "{{ .Values.db.tls.enabled }}"
+            - name: DB_TLS_INSECURE
+              value: "{{ .Values.db.tls.insecure }}"
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

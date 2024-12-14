@@ -124,6 +124,22 @@ cert:
     server: "https://acme-staging-v02.api.letsencrypt.org/directory"
   issuer:
     name: letsencrypt-staging
+db:
+  # Database name to use.
+  name: pub
+  secret:
+    name: "db-mongo"
+    keys:
+      url: "url"
+      username: "username"
+      password: "password"
+  table:
+    # Database table name to use.
+    name:
+      blacklist: blacklist
+  tls:
+    enabled: false
+    insecure: false
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4
