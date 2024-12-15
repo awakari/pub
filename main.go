@@ -185,6 +185,7 @@ func main() {
 		cfg.Api.Writer.Internal,
 		connPoolEvts,
 		blacklist,
+		log,
 	)
 	handlerSrc := httpSrc.NewHandler(svcSrcFeeds, svcSrcSites, svcSrcTg, svcSrcAp, svcTgBot, svcLimits, svcPermits)
 
