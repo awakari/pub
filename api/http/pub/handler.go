@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -30,6 +31,7 @@ type handler struct {
 	connPoolEvts            *grpcpool.Pool
 	writerInternalRateLimit ratelimit.Limiter
 	blacklist               model.Prefixes[model.BlacklistValue]
+	log                     *slog.Logger
 }
 
 func NewHandler(
@@ -37,6 +39,7 @@ func NewHandler(
 	writerInternalCfg config.WriterInternalConfig,
 	connPoolEvts *grpcpool.Pool,
 	blacklist model.Prefixes[model.BlacklistValue],
+	log *slog.Logger,
 ) Handler {
 	return handler{
 		writer:                  writer,
@@ -44,6 +47,7 @@ func NewHandler(
 		connPoolEvts:            connPoolEvts,
 		writerInternalRateLimit: ratelimit.New(writerInternalCfg.RateLimitPerMinute, ratelimit.Per(time.Minute)),
 		blacklist:               blacklist,
+		log:                     log,
 	}
 }
 
@@ -93,34 +97,44 @@ func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal 
 		for i, evt := range evts {
 
 			var prefix string
+			var attrName string
+			var attrValue string
 			prefix, _, _ = h.blacklist.FindOnePrefix(ctx, "source:"+evt.Source)
-			if prefix == "" {
+			switch prefix {
+			case "":
 				prefix, _, _ = h.blacklist.FindOnePrefix(ctx, "type:"+evt.Source)
+			default:
+				attrName = "source"
+				attrValue = evt.Source
 			}
-			if prefix == "" {
+			switch prefix {
+			case "":
 				for k, v := range evt.Attributes {
-					var vs string
 					switch vt := v.Attr.(type) {
 					case *apiGrpcCe.CloudEventAttributeValue_CeString:
-						vs = vt.CeString
+						attrValue = vt.CeString
 					case *apiGrpcCe.CloudEventAttributeValue_CeUri:
-						vs = vt.CeUri
+						attrValue = vt.CeUri
 					case *apiGrpcCe.CloudEventAttributeValue_CeUriRef:
-						vs = vt.CeUriRef
+						attrValue = vt.CeUriRef
 					}
-					if vs != "" {
-						prefix, _, _ = h.blacklist.FindOnePrefix(ctx, k+":"+vs)
+					if attrValue != "" {
+						prefix, _, _ = h.blacklist.FindOnePrefix(ctx, k+":"+attrValue)
 						if prefix != "" {
+							attrName = k
 							break
 						}
 					}
 				}
+			default:
+				attrName = "type"
+				attrValue = evt.Type
 			}
 
 			if prefix != "" {
 				switch i {
 				case 0:
-					fmt.Printf("event %s was rejected by blacklist prefix: %s\n", evt.Id, prefix)
+					h.log.Info(fmt.Sprintf("event was rejected by blacklist prefix: %s, id: %s, attribute: %s=%s\n", prefix, evt.Id, attrName, attrValue))
 					ctx.String(http.StatusForbidden, fmt.Sprintf("forbidden by prefix: %s", prefix))
 					return
 				default:
