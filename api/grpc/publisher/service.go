@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/awakari/pub/api/grpc/auth"
-	"github.com/awakari/pub/api/grpc/ce"
 	"github.com/awakari/pub/api/grpc/events"
 	"github.com/awakari/pub/api/grpc/limits"
 	"github.com/awakari/pub/api/grpc/permits"
 	"github.com/awakari/pub/config"
 	"github.com/awakari/pub/model"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -61,20 +61,20 @@ func (s svc) SubmitMessages(streamSrv Service_SubmitMessagesServer) (err error) 
 			if err == nil {
 				for _, evt := range req.Msgs {
 					if evt.Attributes == nil {
-						evt.Attributes = make(map[string]*ce.CloudEventAttributeValue)
+						evt.Attributes = make(map[string]*pb.CloudEventAttributeValue)
 					}
-					evt.Attributes[model.KeyCeGroupId] = &ce.CloudEventAttributeValue{
-						Attr: &ce.CloudEventAttributeValue_CeString{
+					evt.Attributes[model.KeyCeGroupId] = &pb.CloudEventAttributeValue{
+						Attr: &pb.CloudEventAttributeValue_CeString{
 							CeString: groupId,
 						},
 					}
-					evt.Attributes[model.KeyCeUserId] = &ce.CloudEventAttributeValue{
-						Attr: &ce.CloudEventAttributeValue_CeString{
+					evt.Attributes[model.KeyCeUserId] = &pb.CloudEventAttributeValue{
+						Attr: &pb.CloudEventAttributeValue_CeString{
 							CeString: userId,
 						},
 					}
-					evt.Attributes[model.KeyCePubTime] = &ce.CloudEventAttributeValue{
-						Attr: &ce.CloudEventAttributeValue_CeTimestamp{
+					evt.Attributes[model.KeyCePubTime] = &pb.CloudEventAttributeValue{
+						Attr: &pb.CloudEventAttributeValue_CeTimestamp{
 							CeTimestamp: timestamppb.New(time.Now().UTC()),
 						},
 					}
@@ -174,20 +174,20 @@ func (s svc) notifyLimitReached(
 	if userId == "" || userId == src {
 		return // no limit owner, don't send anything
 	}
-	evt := ce.CloudEvent{
-		Attributes: map[string]*ce.CloudEventAttributeValue{
+	evt := pb.CloudEvent{
+		Attributes: map[string]*pb.CloudEventAttributeValue{
 			model.KeyToGroupId: {
-				Attr: &ce.CloudEventAttributeValue_CeString{
+				Attr: &pb.CloudEventAttributeValue_CeString{
 					CeString: groupId,
 				},
 			},
 			model.KeyToUserId: {
-				Attr: &ce.CloudEventAttributeValue_CeString{
+				Attr: &pb.CloudEventAttributeValue_CeString{
 					CeString: userId,
 				},
 			},
 		},
-		Data: &ce.CloudEvent_TextData{
+		Data: &pb.CloudEvent_TextData{
 			TextData: txtLimitReached,
 		},
 		Id:          ksuid.New().String(),
@@ -196,7 +196,7 @@ func (s svc) notifyLimitReached(
 		Type:        model.ValTypeLimitReached,
 	}
 	req := SubmitMessagesRequest{
-		Msgs: []*ce.CloudEvent{
+		Msgs: []*pb.CloudEvent{
 			&evt,
 		},
 	}

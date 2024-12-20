@@ -16,8 +16,7 @@ proto:
 		api/grpc/permits/*.proto \
 		api/grpc/source/*/*.proto \
 		api/grpc/events/*.proto \
-		api/grpc/auth/*.proto \
-		api/grpc/ce/*.proto
+		api/grpc/auth/*.proto
 
 vet: proto
 	go vet

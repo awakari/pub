@@ -2,16 +2,18 @@ package pub
 
 import (
 	"fmt"
-	apiGrpcCe "github.com/awakari/pub/api/grpc/ce"
 	"github.com/awakari/pub/api/grpc/events"
 	"github.com/awakari/pub/api/grpc/publisher"
 	"github.com/awakari/pub/api/http/grpc"
 	"github.com/awakari/pub/config"
 	"github.com/awakari/pub/model"
+	"github.com/bytedance/sonic"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"github.com/gin-gonic/gin"
 	grpcpool "github.com/processout/grpc-go-pool"
 	"go.uber.org/ratelimit"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"io"
 	"log/slog"
@@ -52,45 +54,49 @@ func NewHandler(
 }
 
 func (h handler) Write(ctx *gin.Context) {
+	defer ctx.Request.Body.Close()
 	body, err := io.ReadAll(ctx.Request.Body)
-	var evt apiGrpcCe.CloudEvent
+	var evt pb.CloudEvent
 	if err == nil {
-		err = protojson.Unmarshal(body, &evt)
+		err = Unmarshal(body, &evt)
+
 	}
 	if err == nil {
-		h.write(ctx, []*apiGrpcCe.CloudEvent{&evt}, false)
+		h.write(ctx, []*pb.CloudEvent{&evt}, false)
 	}
 }
 
 func (h handler) WriteBatch(ctx *gin.Context) {
+	defer ctx.Request.Body.Close()
 	body, err := io.ReadAll(ctx.Request.Body)
-	var evts apiGrpcCe.CloudEventBatch
+	var evts []*pb.CloudEvent
 	if err == nil {
-		err = protojson.Unmarshal(body, &evts)
+		evts, err = UnmarshalBatch(body)
 	}
 	if err == nil {
-		h.write(ctx, evts.Events, false)
+		h.write(ctx, evts, false)
 	}
 }
 
 func (h handler) WriteInternal(ctx *gin.Context) {
+	defer ctx.Request.Body.Close()
 	h.writerInternalRateLimit.Take()
 	body, err := io.ReadAll(ctx.Request.Body)
-	var evt apiGrpcCe.CloudEvent
+	var evt pb.CloudEvent
 	if err == nil {
-		err = protojson.Unmarshal(body, &evt)
+		err = Unmarshal(body, &evt)
 	}
 	if err == nil {
-		evt.Attributes[h.writerInternalCfg.Name] = &apiGrpcCe.CloudEventAttributeValue{
-			Attr: &apiGrpcCe.CloudEventAttributeValue_CeInteger{
+		evt.Attributes[h.writerInternalCfg.Name] = &pb.CloudEventAttributeValue{
+			Attr: &pb.CloudEventAttributeValue_CeInteger{
 				CeInteger: h.writerInternalCfg.Value,
 			},
 		}
-		h.write(ctx, []*apiGrpcCe.CloudEvent{&evt}, true)
+		h.write(ctx, []*pb.CloudEvent{&evt}, true)
 	}
 }
 
-func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal bool) {
+func (h handler) write(ctx *gin.Context, evts []*pb.CloudEvent, internal bool) {
 
 	if !internal {
 
@@ -111,11 +117,11 @@ func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal 
 			case "":
 				for k, v := range evt.Attributes {
 					switch vt := v.Attr.(type) {
-					case *apiGrpcCe.CloudEventAttributeValue_CeString:
+					case *pb.CloudEventAttributeValue_CeString:
 						attrValue = vt.CeString
-					case *apiGrpcCe.CloudEventAttributeValue_CeUri:
+					case *pb.CloudEventAttributeValue_CeUri:
 						attrValue = vt.CeUri
-					case *apiGrpcCe.CloudEventAttributeValue_CeUriRef:
+					case *pb.CloudEventAttributeValue_CeUriRef:
 						attrValue = vt.CeUriRef
 					}
 					if attrValue != "" {
@@ -160,20 +166,20 @@ func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal 
 		grpcCtx, groupId, userId := grpc.AuthRequestContext(ctx)
 		for _, evt := range evts {
 			if evt.Attributes == nil {
-				evt.Attributes = make(map[string]*apiGrpcCe.CloudEventAttributeValue)
+				evt.Attributes = make(map[string]*pb.CloudEventAttributeValue)
 			}
-			evt.Attributes[model.KeyCeGroupId] = &apiGrpcCe.CloudEventAttributeValue{
-				Attr: &apiGrpcCe.CloudEventAttributeValue_CeString{
+			evt.Attributes[model.KeyCeGroupId] = &pb.CloudEventAttributeValue{
+				Attr: &pb.CloudEventAttributeValue_CeString{
 					CeString: groupId,
 				},
 			}
-			evt.Attributes[model.KeyCeUserId] = &apiGrpcCe.CloudEventAttributeValue{
-				Attr: &apiGrpcCe.CloudEventAttributeValue_CeString{
+			evt.Attributes[model.KeyCeUserId] = &pb.CloudEventAttributeValue{
+				Attr: &pb.CloudEventAttributeValue_CeString{
 					CeString: userId,
 				},
 			}
-			evt.Attributes[model.KeyCePubTime] = &apiGrpcCe.CloudEventAttributeValue{
-				Attr: &apiGrpcCe.CloudEventAttributeValue_CeTimestamp{
+			evt.Attributes[model.KeyCePubTime] = &pb.CloudEventAttributeValue{
+				Attr: &pb.CloudEventAttributeValue_CeTimestamp{
 					CeTimestamp: timestamppb.New(time.Now().UTC()),
 				},
 			}
@@ -193,5 +199,27 @@ func (h handler) write(ctx *gin.Context, evts []*apiGrpcCe.CloudEvent, internal 
 		return
 	}
 
-	grpc.RespondJson(ctx, resp, err)
+	switch status.Code(err) {
+	case codes.OK:
+		raw, _ := sonic.Marshal(response{
+			AckCount: resp.AckCount,
+		})
+		ctx.Data(http.StatusOK, gin.MIMEJSON, raw)
+	case codes.NotFound:
+		ctx.String(http.StatusNotFound, err.Error())
+	case codes.AlreadyExists:
+		ctx.String(http.StatusConflict, err.Error())
+	case codes.Unauthenticated:
+		ctx.String(http.StatusUnauthorized, err.Error())
+	case codes.DeadlineExceeded:
+		ctx.String(http.StatusRequestTimeout, err.Error())
+	case codes.InvalidArgument:
+		ctx.String(http.StatusBadRequest, err.Error())
+	case codes.ResourceExhausted:
+		ctx.String(http.StatusTooManyRequests, err.Error())
+	case codes.Unavailable:
+		ctx.String(http.StatusServiceUnavailable, err.Error())
+	default:
+		ctx.String(http.StatusInternalServerError, err.Error())
+	}
 }

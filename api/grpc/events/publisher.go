@@ -2,8 +2,8 @@ package events
 
 import (
 	"context"
-	"github.com/awakari/pub/api/grpc/ce"
 	"github.com/awakari/pub/model"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"io"
 )
 
@@ -27,7 +27,7 @@ func (mw publisher) Close() (err error) {
 	return
 }
 
-func (mw publisher) Write(ctx context.Context, msgs []*ce.CloudEvent) (ackCount uint32, err error) {
+func (mw publisher) Write(ctx context.Context, msgs []*pb.CloudEvent) (ackCount uint32, err error) {
 	req := PublishRequest{
 		Topic: mw.queue,
 		Evts:  msgs,

@@ -14,7 +14,7 @@ import (
 	grpcSrcTg "github.com/awakari/pub/api/grpc/source/telegram"
 	"github.com/awakari/pub/api/grpc/tgbot"
 	auth2 "github.com/awakari/pub/api/http/auth"
-	httpPub "github.com/awakari/pub/api/http/pub"
+	v2 "github.com/awakari/pub/api/http/pub"
 	httpSrc "github.com/awakari/pub/api/http/pub/src"
 	"github.com/awakari/pub/config"
 	"github.com/awakari/pub/model"
@@ -180,7 +180,7 @@ func main() {
 	stor.Close()
 	log.Info("loaded the blacklist")
 
-	handlerPub := httpPub.NewHandler(
+	handlerPub := v2.NewHandler(
 		publisher.NewService(clientEvts, svcPermits, cfg.Api.Events),
 		cfg.Api.Writer.Internal,
 		connPoolEvts,
