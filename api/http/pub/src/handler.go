@@ -68,6 +68,11 @@ func NewHandler(
 func (h handler) Create(ctx *gin.Context) {
 	_, groupId, userId := grpc.AuthRequestContext(ctx)
 	body, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	_ = ctx.Request.Body.Close()
 	var payload CreatePayload
 	err = sonic.Unmarshal(body, &payload)
 	if err != nil {
