@@ -72,7 +72,7 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationValue: 100m
-  targetMemoryUtilizationValue: 60Mi
+  targetMemoryUtilizationValue: 56Mi
 
 priority:
   class: "awk-critical"
