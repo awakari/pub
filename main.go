@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
+	//_ "net/http/pprof"
 	"os"
 )
 
@@ -183,7 +184,6 @@ func main() {
 	handlerPub := v2.NewHandler(
 		publisher.NewService(clientEvts, svcPermits, cfg.Api.Events),
 		cfg.Api.Writer.Internal,
-		connPoolEvts,
 		blacklist,
 		log,
 	)
@@ -201,6 +201,11 @@ func main() {
 	}
 
 	authSrcTg := auth2.NewTelegramValidator(svcSrcTg)
+
+	// expose the profiling
+	//go func() {
+	//    _ = http.ListenAndServe("localhost:6060", nil)
+	//}()
 
 	r := gin.Default()
 	r.

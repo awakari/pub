@@ -107,6 +107,9 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port.http }}
               protocol: TCP
+            - name: prof
+              containerPort: {{ .Values.service.port.prof }}
+              protocol: TCP
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.port.http }}

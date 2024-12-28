@@ -3,7 +3,8 @@ package events
 import (
 	"context"
 	"fmt"
-	"github.com/awakari/pub/model"
+	"github.com/awakari/pub/util"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"log/slog"
 )
 
@@ -25,11 +26,9 @@ func (lm loggingMiddleware) SetStream(ctx context.Context, topic string, limit u
 	return
 }
 
-func (lm loggingMiddleware) NewPublisher(ctx context.Context, topic string) (p model.MessagesWriter, err error) {
-	p, err = lm.svc.NewPublisher(ctx, topic)
-	lm.log.Debug(fmt.Sprintf("events.Publish(topic=%s): err=%s", topic, err))
-	if err == nil {
-		p = model.NewMessagesWriterLogging(p, lm.log, topic)
-	}
+func (lm loggingMiddleware) Publish(ctx context.Context, topic string, evts []*pb.CloudEvent) (ackCount uint32, err error) {
+	ackCount, err = lm.svc.Publish(ctx, topic, evts)
+	ll := util.LogLevel(err)
+	lm.log.Log(ctx, ll, fmt.Sprintf("events.Publish(%s, %d): ack=%d, err=%s", topic, len(evts), ackCount, err))
 	return
 }

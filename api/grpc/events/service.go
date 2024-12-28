@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/awakari/pub/model"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
@@ -12,7 +12,7 @@ import (
 
 type Service interface {
 	SetStream(ctx context.Context, topic string, limit uint32) (err error)
-	NewPublisher(ctx context.Context, topic string) (p model.MessagesWriter, err error)
+	Publish(ctx context.Context, topic string, evts []*pb.CloudEvent) (ackCount uint32, err error)
 }
 
 type service struct {
@@ -39,11 +39,14 @@ func (svc service) SetStream(ctx context.Context, topic string, limit uint32) (e
 	return
 }
 
-func (svc service) NewPublisher(ctx context.Context, topic string) (p model.MessagesWriter, err error) {
-	var stream Service_PublishClient
-	stream, err = svc.client.Publish(ctx)
-	if err == nil {
-		p = newPublisher(stream, topic)
+func (svc service) Publish(ctx context.Context, topic string, evts []*pb.CloudEvent) (ackCount uint32, err error) {
+	var resp *PublishResponse
+	resp, err = svc.client.PublishBatch(ctx, &PublishRequest{
+		Topic: topic,
+		Evts:  evts,
+	})
+	if resp != nil {
+		ackCount = resp.AckCount
 	}
 	err = decodeError(err)
 	return

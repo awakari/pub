@@ -2,7 +2,6 @@ package pub
 
 import (
 	"fmt"
-	"github.com/awakari/pub/api/grpc/events"
 	"github.com/awakari/pub/api/grpc/publisher"
 	"github.com/awakari/pub/api/http/grpc"
 	"github.com/awakari/pub/config"
@@ -10,7 +9,6 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"github.com/gin-gonic/gin"
-	grpcpool "github.com/processout/grpc-go-pool"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,7 +28,6 @@ type Handler interface {
 type handler struct {
 	writer                  publisher.Service
 	writerInternalCfg       config.WriterInternalConfig
-	connPoolEvts            *grpcpool.Pool
 	writerInternalRateLimit ratelimit.Limiter
 	blacklist               model.Prefixes[model.BlacklistValue]
 	log                     *slog.Logger
@@ -39,14 +36,12 @@ type handler struct {
 func NewHandler(
 	writer publisher.Service,
 	writerInternalCfg config.WriterInternalConfig,
-	connPoolEvts *grpcpool.Pool,
 	blacklist model.Prefixes[model.BlacklistValue],
 	log *slog.Logger,
 ) Handler {
 	return handler{
 		writer:                  writer,
 		writerInternalCfg:       writerInternalCfg,
-		connPoolEvts:            connPoolEvts,
 		writerInternalRateLimit: ratelimit.New(writerInternalCfg.RateLimitPerMinute, ratelimit.Per(time.Minute)),
 		blacklist:               blacklist,
 		log:                     log,
@@ -150,48 +145,36 @@ func (h handler) write(ctx *gin.Context, evts []*pb.CloudEvent, internal bool) {
 		}
 	}
 
-	conn, err := h.connPoolEvts.Get(ctx)
-
-	var streamClient events.Service_PublishClient
-	if err == nil {
-		c := conn.ClientConn
-		conn.Close() // return back to the conn pool immediately
-		client := events.NewServiceClient(c)
-		streamClient, err = client.Publish(ctx)
+	grpcCtx, groupId, userId := grpc.AuthRequestContext(ctx)
+	for _, evt := range evts {
+		if evt.Attributes == nil {
+			evt.Attributes = make(map[string]*pb.CloudEventAttributeValue)
+		}
+		evt.Attributes[model.KeyCeGroupId] = &pb.CloudEventAttributeValue{
+			Attr: &pb.CloudEventAttributeValue_CeString{
+				CeString: groupId,
+			},
+		}
+		evt.Attributes[model.KeyCeUserId] = &pb.CloudEventAttributeValue{
+			Attr: &pb.CloudEventAttributeValue_CeString{
+				CeString: userId,
+			},
+		}
+		evt.Attributes[model.KeyCePubTime] = &pb.CloudEventAttributeValue{
+			Attr: &pb.CloudEventAttributeValue_CeTimestamp{
+				CeTimestamp: timestamppb.New(time.Now().UTC()),
+			},
+		}
 	}
-
+	req := publisher.SubmitMessagesRequest{
+		Msgs: evts,
+	}
 	var resp *publisher.SubmitMessagesResponse
-	if err == nil {
-		defer streamClient.CloseSend()
-		grpcCtx, groupId, userId := grpc.AuthRequestContext(ctx)
-		for _, evt := range evts {
-			if evt.Attributes == nil {
-				evt.Attributes = make(map[string]*pb.CloudEventAttributeValue)
-			}
-			evt.Attributes[model.KeyCeGroupId] = &pb.CloudEventAttributeValue{
-				Attr: &pb.CloudEventAttributeValue_CeString{
-					CeString: groupId,
-				},
-			}
-			evt.Attributes[model.KeyCeUserId] = &pb.CloudEventAttributeValue{
-				Attr: &pb.CloudEventAttributeValue_CeString{
-					CeString: userId,
-				},
-			}
-			evt.Attributes[model.KeyCePubTime] = &pb.CloudEventAttributeValue{
-				Attr: &pb.CloudEventAttributeValue_CeTimestamp{
-					CeTimestamp: timestamppb.New(time.Now().UTC()),
-				},
-			}
-		}
-		req := publisher.SubmitMessagesRequest{
-			Msgs: evts,
-		}
-		if internal {
-			resp, err = h.writer.SubmitInternalEvents(grpcCtx, streamClient, &req)
-		} else {
-			resp, err = h.writer.SubmitPermittedEvents(grpcCtx, streamClient, &req, groupId, userId)
-		}
+	var err error
+	if internal {
+		resp, err = h.writer.SubmitInternalEvents(grpcCtx, &req)
+	} else {
+		resp, err = h.writer.SubmitPermittedEvents(grpcCtx, &req, groupId, userId)
 	}
 
 	if err == nil && resp.AckCount == 0 {

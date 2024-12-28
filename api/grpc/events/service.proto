@@ -11,7 +11,7 @@ service Service {
   rpc SetStream(SetStreamRequest) returns (SetStreamResponse);
 
   // Publish events to the specified topic.
-  rpc Publish(stream PublishRequest) returns (stream PublishResponse);
+  rpc PublishBatch(PublishRequest) returns (PublishResponse);
 }
 
 message SetStreamRequest {

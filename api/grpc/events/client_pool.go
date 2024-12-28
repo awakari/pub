@@ -30,18 +30,16 @@ func (cp clientPool) SetStream(ctx context.Context, req *SetStreamRequest, opts 
 	return
 }
 
-func (cp clientPool) Publish(ctx context.Context, opts ...grpc.CallOption) (stream Service_PublishClient, err error) {
+func (cp clientPool) PublishBatch(ctx context.Context, req *PublishRequest, opts ...grpc.CallOption) (resp *PublishResponse, err error) {
 	var conn *grpcpool.ClientConn
 	conn, err = cp.connPool.Get(ctx)
-	var c *grpc.ClientConn
 	if err == nil {
-		c = conn.ClientConn
-		conn.Close() // return back to the conn pool immediately
+		defer conn.Close()
 	}
 	var client ServiceClient
 	if err == nil {
-		client = NewServiceClient(c)
-		stream, err = client.Publish(ctx, opts...)
+		client = NewServiceClient(conn)
+		resp, err = client.PublishBatch(ctx, req, opts...)
 	}
 	return
 }

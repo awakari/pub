@@ -2,10 +2,14 @@ package events
 
 import (
 	"context"
-	"github.com/awakari/pub/model"
+	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 )
 
 type serviceMock struct {
+}
+
+func NewServiceMock() Service {
+	return serviceMock{}
 }
 
 func (sm serviceMock) SetStream(ctx context.Context, topic string, limit uint32) (err error) {
@@ -18,16 +22,7 @@ func (sm serviceMock) SetStream(ctx context.Context, topic string, limit uint32)
 	return
 }
 
-func NewServiceMock() Service {
-	return serviceMock{}
-}
+func (sm serviceMock) Publish(ctx context.Context, topic string, evts []*pb.CloudEvent) (ackCount uint32, err error) {
 
-func (sm serviceMock) NewPublisher(ctx context.Context, topic string) (mw model.MessagesWriter, err error) {
-	switch topic {
-	case "fail":
-		err = ErrInternal
-	default:
-		mw = NewPublisherMock()
-	}
 	return
 }

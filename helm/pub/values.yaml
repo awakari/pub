@@ -39,6 +39,7 @@ service:
   type: ClusterIP
   port:
     http: 8080
+    prof: 6060
 
 ingress:
   enabled: true

@@ -26,6 +26,14 @@ func (cm clientMock) SetStream(ctx context.Context, req *SetStreamRequest, opts 
 	return
 }
 
-func (cm clientMock) Publish(ctx context.Context, opts ...grpc.CallOption) (Service_PublishClient, error) {
-	return newPublishStreamMock(), nil
+func (cm clientMock) PublishBatch(ctx context.Context, req *PublishRequest, opts ...grpc.CallOption) (resp *PublishResponse, err error) {
+	switch req.Topic {
+	case "fail":
+		err = status.Error(codes.Internal, "internal failure")
+	default:
+		resp = &PublishResponse{
+			AckCount: 42,
+		}
+	}
+	return
 }
