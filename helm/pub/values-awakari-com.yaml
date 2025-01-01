@@ -19,6 +19,8 @@ cert:
 
 
 db:
+  secret:
+    name: "db-mongo-external-0"
   tls:
     enabled: true
     insecure: true
