@@ -19,10 +19,14 @@ type ReadPayload struct {
 }
 
 type UsagePayload struct {
-	Type  UsageType `json:"type"`
-	Count int64     `json:"count"`
-	Total int64     `json:"total"`
-	Limit int64     `json:"limit"`
+	Type        UsageType `json:"type"`  // deprecated = TypeHourly
+	Count       int64     `json:"count"` // deprecated = CountHourly
+	CountHourly int64     `json:"countHourly"`
+	CountDaily  int64     `json:"countDaily"`
+	Total       int64     `json:"total"`
+	Limit       int64     `json:"limit"` // deprecated = LimitHourly
+	LimitHourly int64     `json:"limitHourly"`
+	LimitDaily  int64     `json:"limitDaily"`
 }
 
 type UsageType int

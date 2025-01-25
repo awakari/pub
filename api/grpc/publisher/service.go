@@ -26,7 +26,6 @@ type svc struct {
 	cfgEvts    config.EventsConfig
 }
 
-const subjPubMsgs = model.SubjectPublishEvents
 const txtLimitReached = `⚠ Publishing limit reached.
 
 Increase your publishing limit or nominate own sources for the dedicated limit.
@@ -42,22 +41,36 @@ func NewService(client events.ServiceClient, svcPermits permits.Service, cfgEvts
 }
 
 func (s svc) SubmitPermittedEvents(ctx context.Context, req *SubmitMessagesRequest, groupId, userId string) (resp *SubmitMessagesResponse, err error) {
-	// allocate permit
-	var permit model.Permit
-	permit, err = s.svcPermits.Request(ctx, groupId, userId, subjPubMsgs, uint32(len(req.Msgs)))
-	err = encodeError(err)
-	// utilize permit
+	// allocate permits
+	var permitHourly model.Permit
+	permitHourly, err = s.svcPermits.Request(ctx, groupId, userId, model.SubjectPublishHourly, uint32(len(req.Msgs)))
+	var permitDaily model.Permit
 	if err == nil {
-		resp, err = s.utilizePermit(ctx, req, permit, groupId)
+		permitDaily, err = s.svcPermits.Request(ctx, groupId, userId, model.SubjectPublishDaily, uint32(len(req.Msgs)))
+	}
+	err = encodeError(err)
+	// utilize the minimal permit
+	if err == nil {
+		var permitMin model.Permit
+		if permitHourly.Count < permitDaily.Count {
+			permitMin = permitHourly
+		} else {
+			permitMin = permitDaily
+		}
+		resp, err = s.utilizePermit(ctx, req, permitMin, groupId)
 	}
 	var usedCount uint32
 	if err == nil {
 		usedCount = resp.AckCount
 	}
-	// release the unused permit count
-	unusedCount := permit.Count - usedCount
-	if unusedCount > 0 {
-		_ = s.svcPermits.Release(ctx, groupId, permit.UserId, subjPubMsgs, unusedCount)
+	// release the unused permits
+	unusedCountHourly := permitHourly.Count - usedCount
+	if unusedCountHourly > 0 {
+		_ = s.svcPermits.Release(ctx, groupId, permitHourly.UserId, model.SubjectPublishHourly, unusedCountHourly)
+	}
+	unusedCountDaily := permitDaily.Count - usedCount
+	if unusedCountDaily > 0 {
+		_ = s.svcPermits.Release(ctx, groupId, permitDaily.UserId, model.SubjectPublishDaily, unusedCountDaily)
 	}
 	return
 }

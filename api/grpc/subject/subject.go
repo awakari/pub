@@ -11,8 +11,10 @@ func Decode(src Subject) (dst model.Subject, err error) {
 	switch src {
 	case Subject_Interests:
 		dst = model.SubjectInterests
-	case Subject_PublishEvents:
-		dst = model.SubjectPublishEvents
+	case Subject_PublishHourly:
+		dst = model.SubjectPublishHourly
+	case Subject_PublishDaily:
+		dst = model.SubjectPublishDaily
 	default:
 		err = status.Error(codes.InvalidArgument, fmt.Sprintf("invalid subject: %s", src))
 	}
@@ -23,8 +25,10 @@ func Encode(src model.Subject) (dst Subject, err error) {
 	switch src {
 	case model.SubjectInterests:
 		dst = Subject_Interests
-	case model.SubjectPublishEvents:
-		dst = Subject_PublishEvents
+	case model.SubjectPublishHourly:
+		dst = Subject_PublishHourly
+	case model.SubjectPublishDaily:
+		dst = Subject_PublishDaily
 	default:
 		err = fmt.Errorf(fmt.Sprintf("invalid subject: %s", src))
 	}

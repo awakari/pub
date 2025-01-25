@@ -230,28 +230,44 @@ func (h handler) Read(ctx *gin.Context) {
 	}
 	// enrich, TODO better to use GraphQL for this
 	groupId := ctx.GetHeader(model.KeyGroupId)
-	var limit model.Limit
 	ownerId := result.UserId
 	if ownerId == "" {
 		ownerId = result.Addr
 	}
-	limit, err = h.svcLimits.Get(ctx, groupId, ownerId, model.SubjectPublishEvents)
-	var usage model.Usage
+
+	var limitHourly model.Limit
+	limitHourly, err = h.svcLimits.Get(ctx, groupId, ownerId, model.SubjectPublishHourly)
+	var usageHourly model.Usage
 	if err == nil {
-		ownerId = limit.UserId
-		result.Usage.Limit = limit.Count
-		err = h.svcPermits.GetUsage(ctx, groupId, ownerId, model.SubjectPublishEvents, &usage)
+		ownerId = limitHourly.UserId
+		result.Usage.Limit = limitHourly.Count
+		result.Usage.LimitHourly = limitHourly.Count
+		err = h.svcPermits.GetUsage(ctx, groupId, ownerId, model.SubjectPublishHourly, &usageHourly)
 	}
 	if err == nil {
-		result.Usage.Count = usage.Count
-		result.Usage.Total = usage.CountTotal
+		result.Usage.Count = usageHourly.Count
+		result.Usage.CountHourly = usageHourly.Count
+		result.Usage.Total = usageHourly.CountTotal
 	}
+
+	var limitDaily model.Limit
+	limitDaily, err = h.svcLimits.Get(ctx, groupId, ownerId, model.SubjectPublishDaily)
+	var usageDaily model.Usage
+	if err == nil {
+		ownerId = limitDaily.UserId
+		result.Usage.LimitDaily = limitDaily.Count
+		err = h.svcPermits.GetUsage(ctx, groupId, ownerId, model.SubjectPublishDaily, &usageDaily)
+	}
+	if err == nil {
+		result.Usage.CountDaily = usageDaily.Count
+	}
+
 	if err == nil {
 		switch result.UserId {
 		case "":
 			result.Usage.Type = UsageTypeShared
 		case ctx.GetHeader(model.KeyUserId):
-			// own source, leave user id set to show the delete button in UI
+			// own source, keep user id to show the delete button in UI
 			result.Usage.Type = UsageTypePrivate
 		default:
 			// do not expose someone else's source owner user to public
@@ -259,7 +275,7 @@ func (h handler) Read(ctx *gin.Context) {
 			result.Usage.Type = UsageTypePrivate
 		}
 	}
-	//
+
 	switch {
 	case err == nil:
 		ctx.JSON(http.StatusOK, &result)

@@ -5,13 +5,15 @@ type Subject int
 const (
 	SubjectUndefined Subject = iota
 	SubjectInterests
-	SubjectPublishEvents
+	SubjectPublishHourly
+	SubjectPublishDaily
 )
 
 func (s Subject) String() string {
 	return [...]string{
 		"SubjectUndefined",
 		"SubjectInterests",
-		"SubjectPublishEvents",
+		"SubjectPublishHourly",
+		"SubjectPublishDaily",
 	}[s]
 }
