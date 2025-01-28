@@ -19,7 +19,7 @@ type ReadPayload struct {
 }
 
 type UsagePayload struct {
-	Type        UsageType `json:"type"`  // deprecated = TypeHourly
+	Type        UsageType `json:"type"`
 	Count       int64     `json:"count"` // deprecated = CountHourly
 	CountHourly int64     `json:"countHourly"`
 	CountDaily  int64     `json:"countDaily"`
