@@ -24,10 +24,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pebbe/textcat"
 	grpcpool "github.com/processout/grpc-go-pool"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
+	"net/http"
 	"time"
 
 	//_ "net/http/pprof"
@@ -203,11 +207,34 @@ func main() {
 	}
 	svc := service.New(blacklist, cfg.Preprocess, cfg.Api.Writer.Internal, sia, txtCat)
 
+	counterEvts := promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "awk_published_events_count",
+			Help: "The total number of events submitted to Awakari",
+		},
+		[]string{
+			"language",
+			"type",
+		},
+	)
+	counterAttrs := promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "awk_published_attrs_observed_count",
+			Help: "The total number of event attributes observed Awakari resolver",
+		},
+		[]string{
+			"key",
+			"type",
+		},
+	)
+
 	handlerPub := v2.NewHandler(
 		publisher.NewService(clientEvts, svcPermits, cfg.Api.Events),
 		ratelimit.New(cfg.Api.Writer.Internal.RateLimitPerMinute, ratelimit.Per(time.Minute)),
 		log,
 		svc,
+		counterEvts,
+		counterAttrs,
 	)
 	handlerSrc := httpSrc.NewHandler(svcSrcFeeds, svcSrcSites, svcSrcTg, svcSrcAp, svcTgBot, svcLimits, svcPermits)
 
@@ -228,6 +255,9 @@ func main() {
 	//go func() {
 	//    _ = http.ListenAndServe("localhost:6060", nil)
 	//}()
+
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(fmt.Sprintf(":%d", cfg.Api.Metrics.Port), nil)
 
 	r := gin.Default()
 	r.

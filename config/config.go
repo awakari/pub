@@ -19,6 +19,9 @@ type Config struct {
 		Http   struct {
 			Port uint16 `envconfig:"API_HTTP_PORT" default:"8080"`
 		}
+		Metrics struct {
+			Port uint16 `envconfig:"API_METRICS_PORT" default:"9090"`
+		}
 		Auth  AuthConfig
 		Usage UsageConfig
 	}

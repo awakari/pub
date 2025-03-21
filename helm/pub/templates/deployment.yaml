@@ -33,6 +33,8 @@ spec:
           env:
             - name: API_HTTP_PORT
               value: "{{ .Values.service.port.http }}"
+            - name: API_METRICS_PORT
+              value: "{{ .Values.service.port.metrics }}"
             - name: LOG_LEVEL
               value: "{{ .Values.log.level }}"
             - name: API_WRITER_INTERNAL_NAME
@@ -115,6 +117,9 @@ spec:
               protocol: TCP
             - name: prof
               containerPort: {{ .Values.service.port.prof }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.service.port.metrics }}
               protocol: TCP
           livenessProbe:
             tcpSocket:

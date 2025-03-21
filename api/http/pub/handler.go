@@ -8,6 +8,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,6 +28,8 @@ type handler struct {
 	writerInternalRateLimit ratelimit.Limiter
 	log                     *slog.Logger
 	svc                     service.Service
+	counterEvts             *prometheus.CounterVec
+	counterAttrs            *prometheus.CounterVec
 }
 
 func NewHandler(
@@ -34,12 +37,16 @@ func NewHandler(
 	writerInternalRateLimit ratelimit.Limiter,
 	log *slog.Logger,
 	svc service.Service,
+	counterEvts *prometheus.CounterVec,
+	counterAttrs *prometheus.CounterVec,
 ) Handler {
 	return handler{
 		writer:                  writer,
 		writerInternalRateLimit: writerInternalRateLimit, // ratelimit.New(writerInternalCfg.RateLimitPerMinute, ratelimit.Per(time.Minute)),
 		log:                     log,
 		svc:                     svc,
+		counterAttrs:            counterAttrs,
+		counterEvts:             counterEvts,
 	}
 }
 
@@ -123,6 +130,7 @@ func (h handler) write(ctx *gin.Context, evts []*pb.CloudEvent, internal bool) {
 			AckCount: resp.AckCount,
 		})
 		ctx.Data(http.StatusOK, gin.MIMEJSON, raw)
+		h.accountConsumedEvents(evts[:resp.AckCount])
 	case codes.NotFound:
 		ctx.String(http.StatusNotFound, err.Error())
 	case codes.AlreadyExists:
@@ -140,4 +148,37 @@ func (h handler) write(ctx *gin.Context, evts []*pb.CloudEvent, internal bool) {
 	default:
 		ctx.String(http.StatusInternalServerError, err.Error())
 	}
+}
+
+func (h handler) accountConsumedEvents(evts []*pb.CloudEvent) {
+	for _, msg := range evts {
+		var lang string
+		for k, attr := range msg.Attributes {
+			switch attr.Attr.(type) {
+			case *pb.CloudEventAttributeValue_CeBoolean:
+				h.counterAttrs.WithLabelValues(k, "boolean").Inc()
+			case *pb.CloudEventAttributeValue_CeBytes:
+				h.counterAttrs.WithLabelValues(k, "bytes").Inc()
+			case *pb.CloudEventAttributeValue_CeInteger:
+				h.counterAttrs.WithLabelValues(k, "int32").Inc()
+			case *pb.CloudEventAttributeValue_CeString:
+				h.counterAttrs.WithLabelValues(k, "string").Inc()
+				switch k {
+				case "language":
+					lang = attr.GetCeString()
+				}
+			case *pb.CloudEventAttributeValue_CeUri:
+				h.counterAttrs.WithLabelValues(k, "uri").Inc()
+			case *pb.CloudEventAttributeValue_CeUriRef:
+				h.counterAttrs.WithLabelValues(k, "uriref").Inc()
+			case *pb.CloudEventAttributeValue_CeTimestamp:
+				h.counterAttrs.WithLabelValues(k, "timestamp").Inc()
+			}
+		}
+		h.
+			counterEvts.
+			WithLabelValues(lang, msg.Type).
+			Inc()
+	}
+	return
 }

@@ -40,6 +40,7 @@ service:
   port:
     http: 8080
     prof: 6060
+    metrics: 9090
 
 ingress:
   enabled: true
@@ -71,7 +72,7 @@ resources:
 autoscaling:
   enabled: true
   minReplicas: 1
-  maxReplicas: 10
+  maxReplicas: 3
   targetCPUUtilizationValue: 100m
   targetMemoryUtilizationValue: 56Mi
 

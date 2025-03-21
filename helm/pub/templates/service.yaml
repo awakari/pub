@@ -4,6 +4,10 @@ metadata:
   name: {{ include "pub.fullname" . }}
   labels:
     {{- include "pub.labels" . | nindent 4 }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "{{ .Values.service.port.metrics }}"
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -11,5 +15,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.service.port.metrics }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
   selector:
     {{- include "pub.selectorLabels" . | nindent 4 }}
