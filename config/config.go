@@ -26,6 +26,7 @@ type Config struct {
 	Log struct {
 		Level int `envconfig:"LOG_LEVEL" default:"-4" required:"true"`
 	}
+	Preprocess PreprocessConfig
 }
 
 type FeedsConfig struct {
@@ -100,6 +101,18 @@ type DbConfig struct {
 	Tls struct {
 		Enabled  bool `envconfig:"DB_TLS_ENABLED" default:"false" required:"true"`
 		Insecure bool `envconfig:"DB_TLS_INSECURE" default:"false" required:"true"`
+	}
+}
+
+type PreprocessConfig struct {
+	Snippets struct {
+		Enabled bool `envconfig:"PREPROCESS_SNIPPETS_ENABLED" default:"true"`
+		Length  struct {
+			Max int `envconfig:"PREPROCESS_SNIPPETS_LENGTH_MAX" default:"1024"`
+		}
+	}
+	Sentiments struct {
+		Enabled bool `envconfig:"PREPROCESS_SENTIMENTS_ENABLED" default:"true"`
 	}
 }
 

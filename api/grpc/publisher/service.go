@@ -130,12 +130,12 @@ func (s svc) notifyLimitReached(
 	}
 	evt := pb.CloudEvent{
 		Attributes: map[string]*pb.CloudEventAttributeValue{
-			model.KeyToGroupId: {
+			model.KeyCeToGroupId: {
 				Attr: &pb.CloudEventAttributeValue_CeString{
 					CeString: groupId,
 				},
 			},
-			model.KeyToUserId: {
+			model.KeyCeToUserId: {
 				Attr: &pb.CloudEventAttributeValue_CeString{
 					CeString: userId,
 				},

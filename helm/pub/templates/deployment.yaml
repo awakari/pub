@@ -99,6 +99,12 @@ spec:
               value: "{{ .Values.db.tls.enabled }}"
             - name: DB_TLS_INSECURE
               value: "{{ .Values.db.tls.insecure }}"
+            - name: PREPROCESS_SNIPPETS_ENABLED
+              value: "{{ .Values.preprocess.snippets.enabled }}"
+            - name: PREPROCESS_SNIPPETS_LENGTH_MAX
+              value: "{{ .Values.preprocess.snippets.length.max }}"
+            - name: PREPROCESS_SENTIMENTS_ENABLED
+              value: "{{ .Values.preprocess.sentiments.enabled }}"
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

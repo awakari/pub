@@ -18,12 +18,18 @@ import (
 	httpSrc "github.com/awakari/pub/api/http/pub/src"
 	"github.com/awakari/pub/config"
 	"github.com/awakari/pub/model"
+	"github.com/awakari/pub/service"
 	"github.com/awakari/pub/storage"
+	"github.com/drankou/go-vader/vader"
 	"github.com/gin-gonic/gin"
+	"github.com/pebbe/textcat"
 	grpcpool "github.com/processout/grpc-go-pool"
+	"go.uber.org/ratelimit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
+	"time"
+
 	//_ "net/http/pprof"
 	"os"
 )
@@ -181,11 +187,27 @@ func main() {
 	stor.Close()
 	log.Info("loaded the blacklist")
 
+	var sia *vader.SentimentIntensityAnalyzer
+	var txtCat *textcat.TextCat
+	if cfg.Preprocess.Snippets.Enabled {
+		if cfg.Preprocess.Sentiments.Enabled {
+			sia = &vader.SentimentIntensityAnalyzer{}
+			err = sia.Init()
+			if err != nil {
+				panic(err)
+			}
+		}
+		txtCat = textcat.NewTextCat()
+		txtCat.EnableAllRawLanguages()
+		txtCat.EnableAllUtf8Languages()
+	}
+	svc := service.New(blacklist, cfg.Preprocess, cfg.Api.Writer.Internal, sia, txtCat)
+
 	handlerPub := v2.NewHandler(
 		publisher.NewService(clientEvts, svcPermits, cfg.Api.Events),
-		cfg.Api.Writer.Internal,
-		blacklist,
+		ratelimit.New(cfg.Api.Writer.Internal.RateLimitPerMinute, ratelimit.Per(time.Minute)),
 		log,
+		svc,
 	)
 	handlerSrc := httpSrc.NewHandler(svcSrcFeeds, svcSrcSites, svcSrcTg, svcSrcAp, svcTgBot, svcLimits, svcPermits)
 

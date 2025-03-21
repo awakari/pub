@@ -6,8 +6,9 @@ const KeyUserId = "x-awakari-user-id"
 const KeyCeGroupId = "awakarigroupid"
 const KeyCeUserId = "awakariuserid"
 const KeyCePubTime = "awkpubtime"
-
-const KeyToGroupId = "awktogroupid"
-const KeyToUserId = "awktouserid"
+const KeyCeToGroupId = "awktogroupid"
+const KeyCeToUserId = "awktouserid"
+const KeyCeLanguage = "language"
+const KeyCeSnippet = "awksnippet"
 
 const ValTypeLimitReached = "com_awakari_api_permits_exhausted"

@@ -144,3 +144,10 @@ db:
 log:
   # https://pkg.go.dev/golang.org/x/exp/slog#Level
   level: -4
+preprocess:
+  snippets:
+    enabled: true
+    length:
+      max: 1024
+  sentiments:
+    enabled: true
