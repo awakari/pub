@@ -87,10 +87,10 @@ func (s svc) checkBlacklist(ctx context.Context, evt *pb.CloudEvent) (err error)
 	var prefix string
 	var attrName string
 	var attrValue string
-	prefix, _, _ = s.blacklist.FindOnePrefix(ctx, "source:"+evt.Source)
+	prefix, _, _ = s.blacklist.FindOne(ctx, "source:"+evt.Source)
 	switch prefix {
 	case "":
-		prefix, _, _ = s.blacklist.FindOnePrefix(ctx, "type:"+evt.Source)
+		prefix, _, _ = s.blacklist.FindOne(ctx, "type:"+evt.Source)
 	default:
 		attrName = "source"
 		attrValue = evt.Source
@@ -107,7 +107,7 @@ func (s svc) checkBlacklist(ctx context.Context, evt *pb.CloudEvent) (err error)
 				attrValue = vt.CeUriRef
 			}
 			if attrValue != "" {
-				prefix, _, _ = s.blacklist.FindOnePrefix(ctx, k+":"+attrValue)
+				prefix, _, _ = s.blacklist.FindOne(ctx, k+":"+attrValue)
 				if prefix != "" {
 					attrName = k
 					break
@@ -119,7 +119,7 @@ func (s svc) checkBlacklist(ctx context.Context, evt *pb.CloudEvent) (err error)
 		attrValue = evt.Type
 	}
 	if prefix != "" {
-		err = fmt.Errorf("%s: %s, id: %s, attribute: %s=%s\n", ErrRejected, prefix, evt.Id, attrName, attrValue)
+		err = fmt.Errorf("%w: %s, id: %s, attribute: %s=%s\n", ErrRejected, prefix, evt.Id, attrName, attrValue)
 	}
 	return
 }

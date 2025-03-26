@@ -36,7 +36,7 @@ func TestPrefixes_FindOnePrefix(t *testing.T) {
 	}
 	for k, c := range cases {
 		t.Run(k, func(t *testing.T) {
-			prefix, out, err := p.FindOnePrefix(context.TODO(), c.in)
+			prefix, out, err := p.FindOne(context.TODO(), c.in)
 			assert.Equal(t, prefix, c.prefix)
 			assert.Equal(t, c.out, out)
 			assert.ErrorIs(t, err, c.err)

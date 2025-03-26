@@ -175,6 +175,8 @@ func main() {
 	var cursor string
 	var page []model.BlacklistEntry
 	blacklist := model.NewPrefixes[model.BlacklistValue]()
+	blacklist = model.NewPrefixesLogging(blacklist, log)
+	var blacklistSize uint32
 	for {
 		page, err = stor.GetPage(context.TODO(), 100, cursor)
 		if err != nil {
@@ -186,10 +188,11 @@ func main() {
 		cursor = page[len(page)-1].Prefix
 		for _, e := range page {
 			_ = blacklist.Put(context.TODO(), e.Prefix, e.Value)
+			blacklistSize++
 		}
 	}
 	stor.Close()
-	log.Info("loaded the blacklist")
+	log.Info(fmt.Sprintf("loaded the blacklist, size: %d", blacklistSize))
 
 	var sia *vader.SentimentIntensityAnalyzer
 	var txtCat *textcat.TextCat
