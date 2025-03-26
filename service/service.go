@@ -88,17 +88,21 @@ func (s svc) checkBlacklist(ctx context.Context, evt *pb.CloudEvent) (err error)
 	var attrName string
 	var attrValue string
 	prefix, _, _ = s.blacklist.FindOne(ctx, "source:"+evt.Source)
-	switch prefix {
-	case "":
-		prefix, _, _ = s.blacklist.FindOne(ctx, "type:"+evt.Source)
-	default:
+	if prefix != "" {
 		attrName = "source"
 		attrValue = evt.Source
 	}
-	switch prefix {
-	case "":
-		for k, v := range evt.Attributes {
-			switch vt := v.Attr.(type) {
+	if prefix == "" {
+		prefix, _, _ = s.blacklist.FindOne(ctx, "type:"+evt.Type)
+		if prefix != "" {
+			attrName = "type"
+			attrValue = evt.Type
+		}
+	}
+	if prefix == "" {
+		var attr *pb.CloudEventAttributeValue
+		for attrName, attr = range evt.Attributes {
+			switch vt := attr.Attr.(type) {
 			case *pb.CloudEventAttributeValue_CeString:
 				attrValue = vt.CeString
 			case *pb.CloudEventAttributeValue_CeUri:
@@ -107,16 +111,12 @@ func (s svc) checkBlacklist(ctx context.Context, evt *pb.CloudEvent) (err error)
 				attrValue = vt.CeUriRef
 			}
 			if attrValue != "" {
-				prefix, _, _ = s.blacklist.FindOne(ctx, k+":"+attrValue)
+				prefix, _, _ = s.blacklist.FindOne(ctx, attrName+":"+attrValue)
 				if prefix != "" {
-					attrName = k
 					break
 				}
 			}
 		}
-	default:
-		attrName = "type"
-		attrValue = evt.Type
 	}
 	if prefix != "" {
 		err = fmt.Errorf("%w: %s, id: %s, attribute: %s=%s\n", ErrRejected, prefix, evt.Id, attrName, attrValue)
