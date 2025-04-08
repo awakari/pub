@@ -30,7 +30,7 @@ func Encode(src model.Subject) (dst Subject, err error) {
 	case model.SubjectPublishDaily:
 		dst = Subject_PublishDaily
 	default:
-		err = fmt.Errorf(fmt.Sprintf("invalid subject: %s", src))
+		err = fmt.Errorf("invalid subject: %s", src)
 	}
 	return
 }

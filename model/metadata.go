@@ -9,6 +9,6 @@ const KeyCePubTime = "awkpubtime"
 const KeyCeToGroupId = "awktogroupid"
 const KeyCeToUserId = "awktouserid"
 const KeyCeLanguage = "language"
-const KeyCeSnippet = "awksnippet"
+const KeyCeSnippet = "snippet"
 
 const ValTypeLimitReached = "com_awakari_api_permits_exhausted"
