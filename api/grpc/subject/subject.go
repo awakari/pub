@@ -3,23 +3,7 @@ package subject
 import (
 	"fmt"
 	"github.com/awakari/pub/model"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
-
-func Decode(src Subject) (dst model.Subject, err error) {
-	switch src {
-	case Subject_Interests:
-		dst = model.SubjectInterests
-	case Subject_PublishHourly:
-		dst = model.SubjectPublishHourly
-	case Subject_PublishDaily:
-		dst = model.SubjectPublishDaily
-	default:
-		err = status.Error(codes.InvalidArgument, fmt.Sprintf("invalid subject: %s", src))
-	}
-	return
-}
 
 func Encode(src model.Subject) (dst Subject, err error) {
 	switch src {
