@@ -101,7 +101,7 @@ api:
       name: "awkinternal"
       secret: "resolver-internal-attr-val"
   events:
-    uri: "events.backend.svc.cluster.local::50066"
+    uri: "events.backend.svc.cluster.local:50066"
     conn:
       count:
         init: 1
