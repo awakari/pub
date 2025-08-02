@@ -65,6 +65,24 @@ func NewHandler(
 	}
 }
 
+// Create godoc
+// @Summary Create publishing source
+// @Schemes
+// @Description Register a new publishing source
+// @Tags Sources
+// @Accept json
+// @Param payload body CreatePayload true "A publishing source create payload"
+// @Param type path string true "Source type: 'feed', 'apub' or 'tgch'"
+// @Param X-Awakari-Group-Id header string true "default"
+// @Param X-Awakari-User-Id header string true "foo"
+// @Param Authorization	header string true "Bearer XXX..."
+// @Success 201 {string} string "creation info"
+// @Failure 400 {string} string "invalid request"
+// @Failure 401 {string} string "unauthorized"
+// @Failure 403 {string} string "permission denied"
+// @Failure 409 {string} string "source already registered"
+// @Failure 500 {string} string "internal failure"
+// @Router /v1/src/{type} [post]
 func (h handler) Create(ctx *gin.Context) {
 	_, groupId, userId := grpc.AuthRequestContext(ctx)
 	body, err := io.ReadAll(ctx.Request.Body)
@@ -121,6 +139,23 @@ func (h handler) Create(ctx *gin.Context) {
 	return
 }
 
+// Read godoc
+// @Summary Read publishing source
+// @Schemes
+// @Description Read an existing publishing source details
+// @Tags Sources
+// @Param type path string true "Source type: 'feed', 'apub' or 'tgch'"
+// @Param X-Awakari-Src-Addr header string true "URL query-escaped source address"
+// @Param X-Awakari-Group-Id header string true "default"
+// @Param X-Awakari-User-Id header string true "foo"
+// @Param Authorization	header string true "Bearer XXX..."
+// @Success 200 {object} ReadPayload ""
+// @Failure 400 {string} string "invalid request"
+// @Failure 401 {string} string "unauthorized"
+// @Failure 403 {string} string "permission denied"
+// @Failure 404 {string} string "doesn't exist"
+// @Failure 500 {string} string "internal failure"
+// @Router /v1/src/{type} [get]
 func (h handler) Read(ctx *gin.Context) {
 	addrEnc := ctx.GetHeader(keySrcAddr)
 	if addrEnc == "" {
@@ -165,9 +200,6 @@ func (h handler) Read(ctx *gin.Context) {
 			result.UserId = feed.UserId
 			if feed.ItemLast != nil {
 				result.LastUpdate = feed.ItemLast.AsTime()
-			}
-			if feed.UpdatePeriod != nil {
-				result.UpdatePeriod = feed.UpdatePeriod.AsDuration()
 			}
 			if feed.NextUpdate != nil {
 				result.NextUpdate = feed.NextUpdate.AsTime()
@@ -289,6 +321,22 @@ func (h handler) Read(ctx *gin.Context) {
 	return
 }
 
+// Delete godoc
+// @Summary Delete publishing source
+// @Schemes
+// @Description Delete an existing publishing source
+// @Tags Sources
+// @Param type path string true "Source type: 'feed', 'apub' or 'tgch'"
+// @Param X-Awakari-Src-Addr header string true "URL query-escaped source address"
+// @Param X-Awakari-Group-Id header string true "default"
+// @Param X-Awakari-User-Id header string true "foo"
+// @Param Authorization	header string true "Bearer XXX..."
+// @Success 200 {string} string "success"
+// @Failure 400 {string} string "invalid request"
+// @Failure 401 {string} string "unauthorized"
+// @Failure 404 {string} string "doesn't exist"
+// @Failure 500 {string} string "internal failure"
+// @Router /v1/src/{type} [delete]
 func (h handler) Delete(ctx *gin.Context) {
 	_, groupId, userId := grpc.AuthRequestContext(ctx)
 	addrEnc := ctx.GetHeader(keySrcAddr)
@@ -338,6 +386,26 @@ func (h handler) Delete(ctx *gin.Context) {
 	return
 }
 
+// List godoc
+// @Summary List publishing sources
+// @Schemes
+// @Description List a page of existing publishing sources
+// @Tags Sources
+// @Param type path string true "Source type: 'feed', 'apub' or 'tgch'"
+// @Param X-Awakari-Src-Addr header string true "cursor: URL query-escaped source address"
+// @Param X-Awakari-Group-Id header string true "default"
+// @Param X-Awakari-User-Id header string true "foo"
+// @Param Authorization	header string true "Bearer XXX..."
+// @Param limit query int false "results page size limit, default is 10"
+// @Param own query bool false "list own only sources (true) or all (false, default)"
+// @Param order query string false "sorting order, ASC (default) or DESC"
+// @Param filter query string false "filter source names and addresses"
+// @Param subId query string false "id of the interest used to discover and register sources"
+// @Success 200 {object} string "json array of source addresses"
+// @Failure 400 {string} string "invalid request"
+// @Failure 401 {string} string "unauthorized"
+// @Failure 500 {string} string "internal failure"
+// @Router /v1/src/{type}/list [get]
 func (h handler) List(ctx *gin.Context) {
 	_, groupId, userId := grpc.AuthRequestContext(ctx)
 	limitStr := ctx.DefaultQuery("limit", strconv.Itoa(pageLimitDefault))

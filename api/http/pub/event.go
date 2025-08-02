@@ -9,40 +9,43 @@ import (
 	"time"
 )
 
-type event struct {
-	Id           string               `json:"id"`
-	SpecVersion1 *string              `json:"specVersion,omitempty"`
-	SpecVersion2 *string              `json:"spec_version,omitempty"`
-	Source       string               `json:"source"`
-	Type         string               `json:"type"`
-	Attributes   map[string]attribute `json:"attributes"`
-	TextData1    *string              `json:"textData,omitempty"`
-	TextData2    *string              `json:"text_data,omitempty"`
+// Event model info
+type Event struct {
+	Id           string                    `json:"id" example:"Pe6M15AHJxmDx1OVP37vXrOJZA0"`
+	SpecVersion1 *string                   `json:"specVersion,omitempty" example:"1.0"`
+	SpecVersion2 *string                   `json:"spec_version,omitempty" example:"1.0"`
+	Source       string                    `json:"source" example:"https://dailygalaxy.com/feed/"`
+	Type         string                    `json:"type" example:"com_awakari_bluesky_v1"`
+	Attributes   map[string]EventAttribute `json:"attributes"`
+	TextData1    *string                   `json:"textData,omitempty" example:"Secular Resonances in Planet-Hosting Binary Stars. I. General Theory"`
+	TextData2    *string                   `json:"text_data,omitempty" example:"Secular Resonances in Planet-Hosting Binary Stars. I. General Theory"`
 }
 
-type attribute struct {
-	CeBoolean1   *bool      `json:"ceBoolean,omitempty"`
-	CeBoolean2   *bool      `json:"ce_boolean,omitempty"`
-	CeBytes1     *string    `json:"ceBytes,omitempty"`
-	CeBytes2     *string    `json:"ce_bytes,omitempty"`
-	CeInteger1   *int32     `json:"ceInteger,omitempty"`
-	CeInteger2   *int32     `json:"ce_integer,omitempty"`
-	CeString1    *string    `json:"ceString,omitempty"`
-	CeString2    *string    `json:"ce_string,omitempty"`
-	CeTimestamp1 *time.Time `json:"ceTimestamp,omitempty"`
-	CeTimestamp2 *time.Time `json:"ce_timestamp,omitempty"`
-	CeUri1       *string    `json:"ceUri,omitempty"`
-	CeUri2       *string    `json:"ce_uri,omitempty"`
-	CeUriRef1    *string    `json:"ceUriRef,omitempty"`
-	CeUriRef2    *string    `json:"ce_uri_ref,omitempty"`
+// EventAttribute model info
+type EventAttribute struct {
+	CeBoolean1   *bool      `json:"ceBoolean,omitempty" example:"true"`
+	CeBoolean2   *bool      `json:"ce_boolean,omitempty" example:"false"`
+	CeBytes1     *string    `json:"ceBytes,omitempty" example:"aGVsbG8gd29ybGQh"`
+	CeBytes2     *string    `json:"ce_bytes,omitempty" example:"aGVsbG8gd29ybGQh"`
+	CeInteger1   *int32     `json:"ceInteger,omitempty" example:"42"`
+	CeInteger2   *int32     `json:"ce_integer,omitempty" example:"42"`
+	CeString1    *string    `json:"ceString,omitempty" example:"foo"`
+	CeString2    *string    `json:"ce_string,omitempty" example:"bar"`
+	CeTimestamp1 *time.Time `json:"ceTimestamp,omitempty" example:"2022-03-20T00:00:00Z"`
+	CeTimestamp2 *time.Time `json:"ce_timestamp,omitempty" example:"2022-03-20T00:00:00Z"`
+	CeUri1       *string    `json:"ceUri,omitempty" example:"https://dailygalaxy.com/2025/08/exoplanet-almost-had-life-what-we-found/"`
+	CeUri2       *string    `json:"ce_uri,omitempty" example:"https://dailygalaxy.com/2025/08/exoplanet-almost-had-life-what-we-found/"`
+	CeUriRef1    *string    `json:"ceUriRef,omitempty" example:"https://example.com/"`
+	CeUriRef2    *string    `json:"ce_uri_ref,omitempty" example:"https://example.com/"`
 }
 
-type eventBatch struct {
-	Events []event `json:"events"`
+// EventBatch model info
+type EventBatch struct {
+	Events []Event `json:"events"`
 }
 
 func Unmarshal(src []byte, dst *pb.CloudEvent) (err error) {
-	var raw event
+	var raw Event
 	err = sonic.Unmarshal(src, &raw)
 	if err == nil {
 		err = convert(raw, dst)
@@ -51,7 +54,7 @@ func Unmarshal(src []byte, dst *pb.CloudEvent) (err error) {
 }
 
 func UnmarshalBatch(src []byte) (dstBatch []*pb.CloudEvent, err error) {
-	var rawBatch eventBatch
+	var rawBatch EventBatch
 	err = sonic.Unmarshal(src, &rawBatch)
 	if err == nil {
 		for _, raw := range rawBatch.Events {
@@ -66,7 +69,7 @@ func UnmarshalBatch(src []byte) (dstBatch []*pb.CloudEvent, err error) {
 	return
 }
 
-func convert(raw event, dst *pb.CloudEvent) (err error) {
+func convert(raw Event, dst *pb.CloudEvent) (err error) {
 
 	dst.Id = raw.Id
 	dst.Source = raw.Source

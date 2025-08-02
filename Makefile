@@ -29,7 +29,11 @@ test: vet
 	./scripts/cover.sh
 	rm -f ${COVERAGE_TMP_FILE_NAME}
 
-build: proto
+swagger:
+	go install github.com/swaggo/swag/cmd/swag@latest
+	PATH=${PATH}:~/go/bin swag init
+
+build: proto swagger
 	CGO_ENABLED=0 GOOS=linux GOARCH= GOARM= go build -ldflags="-s -w" -o ${BINARY_FILE_NAME} main.go
 	chmod ugo+x ${BINARY_FILE_NAME}
 

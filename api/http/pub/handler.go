@@ -50,6 +50,24 @@ func NewHandler(
 	}
 }
 
+// Write godoc
+// @Summary Publish an event
+// @Schemes
+// @Description Submit a single CloudEvent to Awakari
+// @Tags Events
+// @Accept json
+// @Param payload body Event true "https://github.com/cloudevents/spec/blob/main/cloudevents/formats/json-format.md#32-examples"
+// @Param X-Awakari-Group-Id header string true "default"
+// @Param X-Awakari-User-Id header string true "foo"
+// @Param Authorization	header string true "Bearer XXX..."
+// @Success 200 {object} PublishResponse
+// @Failure 400 {string} string "invalid request"
+// @Failure 401 {string} string "unauthorized"
+// @Failure 403 {string} string "event is blacklisted"
+// @Failure 429 {string} string "hourly or daily publishing limit reached"
+// @Failure 500 {string} string "internal failure"
+// @Failure 503 {string} string "failed to submit, try later"
+// @Router /v1 [post]
 func (h handler) Write(ctx *gin.Context) {
 	defer ctx.Request.Body.Close()
 	body, err := io.ReadAll(ctx.Request.Body)
@@ -62,6 +80,24 @@ func (h handler) Write(ctx *gin.Context) {
 	}
 }
 
+// WriteBatch godoc
+// @Summary Publish a batch of events
+// @Schemes
+// @Description Submit a batch of CloudEvents to Awakari
+// @Tags Events
+// @Accept json
+// @Param payload body EventBatch true "https://github.com/cloudevents/spec/blob/main/cloudevents/formats/json-format.md#4-json-batch-format"
+// @Param X-Awakari-Group-Id header string true "default"
+// @Param X-Awakari-User-Id header string true "foo"
+// @Param Authorization	header string true "Bearer XXX..."
+// @Success 200 {object} PublishResponse
+// @Failure 400 {string} string "invalid request"
+// @Failure 401 {string} string "unauthorized"
+// @Failure 403 {string} string "event is blacklisted"
+// @Failure 429 {string} string "hourly or daily publishing limit reached"
+// @Failure 500 {string} string "internal failure"
+// @Failure 503 {string} string "failed to submit, try later"
+// @Router /v1/batch [post]
 func (h handler) WriteBatch(ctx *gin.Context) {
 	defer ctx.Request.Body.Close()
 	body, err := io.ReadAll(ctx.Request.Body)
@@ -126,7 +162,7 @@ func (h handler) write(ctx *gin.Context, evts []*pb.CloudEvent, internal bool) {
 
 	switch status.Code(err) {
 	case codes.OK:
-		raw, _ := sonic.Marshal(response{
+		raw, _ := sonic.Marshal(PublishResponse{
 			AckCount: resp.AckCount,
 		})
 		ctx.Data(http.StatusOK, gin.MIMEJSON, raw)

@@ -24,3 +24,4 @@ ghcr_io_pat.txt
 *.csr
 *.p12
 .idea
+docs/

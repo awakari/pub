@@ -5,9 +5,15 @@ import (
 	"fmt"
 )
 
+// CreatePayload model info
+// @Description A publishing source create payload
 type CreatePayload struct {
+
+	// Limit deprecated
 	Limit LimitPayload `json:"limit,omitempty"`
-	Src   SrcPayload   `json:"src"`
+
+	// Src represents a publishing source details
+	Src SrcPayload `json:"src"`
 }
 
 type LimitPayload struct {
@@ -17,9 +23,15 @@ type LimitPayload struct {
 const FreqMin = 1   // once a day
 const FreqMax = 288 // every 5 minutes
 
+// SrcPayload model info
+// @Description Publishing source details
 type SrcPayload struct {
-	Addr string `json:"addr"`
-	Type string `json:"type,omitempty"`
+
+	// Addr source address, e.g. "https://time.com/feed", "https://mastodon.social/@Mastodon", "@proxymtproto"
+	Addr string `json:"addr" example:"https://time.com/feed"`
+
+	// Type source type, one of "apub" (ActivityPub), "feed" (web feed), "tgch" (Telegram channel)
+	Type string `json:"type,omitempty" example:"feed"`
 }
 
 const TypeApub = "apub"

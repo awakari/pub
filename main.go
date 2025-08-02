@@ -34,10 +34,24 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/awakari/pub/docs"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	//_ "net/http/pprof"
 	"os"
 )
 
+// @title           Awakari Publishing API
+// @version         1.0
+// @description     Publish API service is responsible for publishing messages and managing sources.
+
+// @contact.name   Awakari Support
+// @contact.email  awakari@awakari.com
+
+// @BasePath  /
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	//
 	slog.Info("starting...")
@@ -263,6 +277,7 @@ func main() {
 	go http.ListenAndServe(fmt.Sprintf(":%d", cfg.Api.Metrics.Port), nil)
 
 	r := gin.Default()
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.
 		Group("/v1/src/:type").
 		POST("", handlerAuth.Authorize, handlerSrc.Create).
