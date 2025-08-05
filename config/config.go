@@ -62,8 +62,11 @@ type EventsConfig struct {
 		}
 		IdleTimeout time.Duration `envconfig:"API_EVENTS_CONN_IDLE_TIMEOUT" default:"15m" required:"true"`
 	}
-	Topic string `envconfig:"API_EVENTS_TOPIC" default:"published" required:"true"`
-	Limit uint32 `envconfig:"API_EVENTS_LIMIT" default:"100000" required:"true"`
+	Limit  uint32 `envconfig:"API_EVENTS_LIMIT" default:"100000" required:"true"`
+	Topics struct {
+		Fmt   string `envconfig:"API_EVENTS_TOPICS_FMT" default:"published-%d" required:"true"`
+		Count int    `envconfig:"API_EVENTS_TOPICS_COUNT" default:"5" required:"true"`
+	}
 }
 
 type WriterInternalConfig struct {

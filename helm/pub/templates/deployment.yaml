@@ -58,8 +58,10 @@ spec:
               value: "{{ .Values.api.source.telegram.fmtUriReplica }}"
             - name: API_EVENTS_URI
               value: "{{ .Values.api.events.uri }}"
-            - name: API_EVENTS_TOPIC
-              value: "{{ .Values.api.events.topic }}"
+            - name: API_EVENTS_TOPICS_FMT
+              value: "{{ .Values.api.events.topics.fmt }}"
+            - name: API_EVENTS_TOPICS_COUNT
+              value: "{{ .Values.api.events.topics.count }}"
             - name: API_EVENTS_LIMIT
               value: "{{ .Values.api.events.limit }}"
             - name: API_EVENTS_CONN_COUNT_INIT

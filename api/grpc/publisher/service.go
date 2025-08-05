@@ -79,7 +79,7 @@ func (s svc) SubmitInternalEvents(ctx context.Context, req *SubmitMessagesReques
 	// proxy a request
 	var dstResp *events.PublishResponse
 	dstResp, err = s.client.PublishBatch(ctx, &events.PublishRequest{
-		Topic: s.cfgEvts.Topic,
+		Topic: fmt.Sprintf(s.cfgEvts.Topics.Fmt, 0),
 		Evts:  req.Msgs,
 	})
 	if dstResp != nil {
@@ -160,20 +160,29 @@ func (s svc) notifyLimitReached(
 }
 
 func (s svc) applyPermit(srcReq *SubmitMessagesRequest, permit model.Permit) (dstReq *events.PublishRequest, err error) {
+
+	// select topic
+	sum := 0
+	for _, c := range permit.UserId {
+		sum += int(c)
+	}
+	topic := fmt.Sprintf(s.cfgEvts.Topics.Fmt, sum%s.cfgEvts.Topics.Count)
+
 	switch permit.Count {
 	case 0:
 		err = status.Error(codes.ResourceExhausted, fmt.Sprintf("user id %s: usage limit reached/not set", permit.UserId))
 	case uint32(len(srcReq.Msgs)):
 		dstReq = &events.PublishRequest{
-			Topic: s.cfgEvts.Topic,
 			Evts:  srcReq.Msgs,
+			Topic: topic,
 		}
 	default:
 		dstReq = &events.PublishRequest{
-			Topic: s.cfgEvts.Topic,
 			Evts:  srcReq.Msgs[:permit.Count],
+			Topic: topic,
 		}
 	}
+
 	return
 }
 

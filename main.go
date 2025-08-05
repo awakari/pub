@@ -79,9 +79,11 @@ func main() {
 	clientEvts := events.NewClientPool(connPoolEvts)
 	svcEvts := events.NewService(clientEvts)
 	svcEvts = events.NewLoggingMiddleware(svcEvts, log)
-	err = svcEvts.SetStream(context.TODO(), cfg.Api.Events.Topic, cfg.Api.Events.Limit)
-	if err != nil {
-		panic(err)
+	for i := 0; i < cfg.Api.Events.Topics.Count; i++ {
+		err = svcEvts.SetStream(context.TODO(), fmt.Sprintf(cfg.Api.Events.Topics.Fmt, i), cfg.Api.Events.Limit)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// init the source-feeds client
