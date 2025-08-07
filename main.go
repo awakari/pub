@@ -79,7 +79,7 @@ func main() {
 	clientEvts := events.NewClientPool(connPoolEvts)
 	svcEvts := events.NewService(clientEvts)
 	svcEvts = events.NewLoggingMiddleware(svcEvts, log)
-	for i := 0; i < cfg.Api.Events.Topics.Count; i++ {
+	for i := uint64(0); i < cfg.Api.Events.Topics.Count; i++ {
 		err = svcEvts.SetStream(context.TODO(), fmt.Sprintf(cfg.Api.Events.Topics.Fmt, i), cfg.Api.Events.Limit)
 		if err != nil {
 			panic(err)
