@@ -110,7 +110,7 @@ api:
     limit: 100000
     topics:
       fmt: "published-%d"
-      count: 5
+      count: 3
   tgbot:
     uri: "bot-telegram:50051"
   auth:
