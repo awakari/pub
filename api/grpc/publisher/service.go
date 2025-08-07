@@ -13,6 +13,7 @@ import (
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"hash/maphash"
 )
 
 type Service interface {
@@ -162,11 +163,9 @@ func (s svc) notifyLimitReached(
 func (s svc) applyPermit(srcReq *SubmitMessagesRequest, permit model.Permit) (dstReq *events.PublishRequest, err error) {
 
 	// select topic
-	sum := 0
-	for _, c := range permit.UserId {
-		sum += int(c)
-	}
-	topic := fmt.Sprintf(s.cfgEvts.Topics.Fmt, sum%s.cfgEvts.Topics.Count)
+	var h maphash.Hash
+	_, _ = h.WriteString(permit.UserId)
+	topic := fmt.Sprintf(s.cfgEvts.Topics.Fmt, h.Sum64()%s.cfgEvts.Topics.Count)
 
 	switch permit.Count {
 	case 0:

@@ -65,7 +65,7 @@ type EventsConfig struct {
 	Limit  uint32 `envconfig:"API_EVENTS_LIMIT" default:"100000" required:"true"`
 	Topics struct {
 		Fmt   string `envconfig:"API_EVENTS_TOPICS_FMT" default:"published-%d" required:"true"`
-		Count int    `envconfig:"API_EVENTS_TOPICS_COUNT" default:"3" required:"true"`
+		Count uint64 `envconfig:"API_EVENTS_TOPICS_COUNT" default:"3" required:"true"`
 	}
 }
 
