@@ -14,7 +14,7 @@ type prefixes[T any] struct {
 	t *trie.Trie[T]
 }
 
-const inputLengthMax = 64
+const inputLengthMax = 0x100
 
 func NewPrefixes[T any]() Prefixes[T] {
 	return prefixes[T]{
